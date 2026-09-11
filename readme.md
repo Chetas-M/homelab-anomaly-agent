@@ -1,0 +1,1 @@
+a lightweight ML model that watches your node metrics (CPU, temp, network, disk) and flags anomalies (isolation forest / LSTM autoencoder), with alerts pushed to Telegram (you already have that pattern from AXIOM). Genuinely useful, trains on data you already generate, and is a clean "applied ML" story for college — anomaly detection is a well-respected topic to write up.
