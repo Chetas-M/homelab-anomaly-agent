@@ -9,7 +9,7 @@ To build a reliable telemetry ingestion and anomaly detection system for local i
 
 ```mermaid
 graph TD
-    A[Alpha: Windows 11 Collector] -->|HTTP POST| B(Beta: anomaly-api :8001)
+    A[Alpha: Windows 11 Collector] -->|HTTP POST| B(Beta: anomaly-api :8002)
     C[Gamma: Ubuntu Collector] -->|HTTP POST| B
     B -->|Internal Docker Net| D[(Beta: anomaly-postgres :5432)]
 ```
@@ -60,7 +60,7 @@ CREATE INDEX idx_node_ts ON node_metrics (node_id, ts);
 ## Collector Configuration
 Collectors use environment variables to configure their behavior:
 *   `NODE_ID`: Unique node identifier (e.g., `alpha-win`).
-*   `INGEST_URL`: Target endpoint (e.g., `http://192.168.1.50:8001/ingest`).
+*   `INGEST_URL`: Target endpoint (e.g., `http://192.168.1.50:8002/ingest`).
 *   `COLLECT_INTERVAL`: Polling interval in seconds (default 30).
 *   `HAS_GPU`: Enables GPU monitoring if `true` using pynvml.
 
