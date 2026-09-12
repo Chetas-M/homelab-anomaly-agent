@@ -59,25 +59,82 @@ def test_collector_metrics_generation(mock_psutil):
     assert "node_id" in metrics
     assert "ts" in metrics
 
-@patch("collector.agent.requests.post")
-def test_collector_graceful_failure(mock_post, caplog):
-    mock_post.side_effect = Exception("API down")
-    
+def test_collector_graceful_failure(caplog):
     collector = Collector()
-    # Mock collect_metrics to return a simple dict
+    mock_post = MagicMock(side_effect=Exception("API down"))
+    collector.session.post = mock_post
     collector.collect_metrics = MagicMock(return_value={"test": 1})
     
     # Test just one iteration of loop manually instead of calling run() which loops forever
     try:
         # Re-implement one run iteration for testing error handling
         metrics = collector.collect_metrics()
-        response = mock_post(INGEST_URL, json=metrics, timeout=5)
+        response = collector.session.post(INGEST_URL, json=metrics, timeout=5)
         response.raise_for_status()
     except Exception as e:
         import logging
         logging.getLogger("collector.agent").error(f"Unexpected error during collection: {e}")
         
     assert "API down" in caplog.text
+    collector.close()
+
+def test_collector_fallback_ingest_url():
+    assert INGEST_URL == "http://localhost:8002/ingest"
+
+def test_collector_session_persistence():
+    import requests
+    collector = Collector()
+    assert isinstance(collector.session, requests.Session)
+    collector.close()
+
+@patch("collector.agent.GPU_AVAILABLE", True)
+@patch("collector.agent.pynvml")
+def test_collector_gpu_cached_handle_and_metrics(mock_pynvml):
+    mock_handle = MagicMock()
+    mock_pynvml.nvmlDeviceGetHandleByIndex.return_value = mock_handle
+    
+    mock_util = MagicMock()
+    mock_util.gpu = 42.0
+    mock_pynvml.nvmlDeviceGetUtilizationRates.return_value = mock_util
+    
+    mock_mem = MagicMock()
+    mock_mem.used = 2 * 1024 * 1024 * 1024
+    mock_mem.total = 8 * 1024 * 1024 * 1024
+    mock_pynvml.nvmlDeviceGetMemoryInfo.return_value = mock_mem
+    
+    collector = Collector()
+    assert collector.gpu_handle == mock_handle
+    mock_pynvml.nvmlDeviceGetHandleByIndex.assert_called_once_with(0)
+    
+    metrics = collector.collect_metrics()
+    assert metrics["gpu_util_pct"] == 42.0
+    assert metrics["gpu_vram_pct"] == 25.0
+    
+    # Ensure handle was NOT retrieved again
+    mock_pynvml.nvmlDeviceGetHandleByIndex.assert_called_once()
+    mock_pynvml.nvmlDeviceGetUtilizationRates.assert_called_with(mock_handle)
+    mock_pynvml.nvmlDeviceGetMemoryInfo.assert_called_with(mock_handle)
+    collector.close()
+
+@patch("collector.agent.GPU_AVAILABLE", False)
+def test_collector_gpu_fallback_when_unavailable():
+    collector = Collector()
+    assert collector.gpu_handle is None
+    metrics = collector.collect_metrics()
+    assert metrics["gpu_util_pct"] is None
+    assert metrics["gpu_vram_pct"] is None
+    collector.close()
+
+@patch("collector.agent.GPU_AVAILABLE", True)
+@patch("collector.agent.pynvml")
+def test_collector_gpu_handle_failure_graceful(mock_pynvml):
+    mock_pynvml.nvmlDeviceGetHandleByIndex.side_effect = Exception("NVML device error")
+    collector = Collector()
+    assert collector.gpu_handle is None
+    metrics = collector.collect_metrics()
+    assert metrics["gpu_util_pct"] is None
+    assert metrics["gpu_vram_pct"] is None
+    collector.close()
 
 @patch("collector.agent.psutil")
 def test_collector_counter_reset(mock_psutil):
