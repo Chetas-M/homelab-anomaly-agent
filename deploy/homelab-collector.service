@@ -1,0 +1,14 @@
+[Unit]
+Description=Home Lab Anomaly Collector
+After=network.target
+
+[Service]
+User=root
+WorkingDirectory=/opt/homelab-anomaly-agent
+EnvironmentFile=/opt/homelab-anomaly-agent/deploy/homelab-collector.env
+ExecStart=/opt/homelab-anomaly-agent/.venv/bin/python -m collector.agent
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target

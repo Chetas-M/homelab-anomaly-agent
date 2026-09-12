@@ -1,0 +1,42 @@
+services:
+  anomaly-postgres:
+    image: postgres:16-alpine
+    container_name: anomaly-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: homelab_anomaly
+      POSTGRES_USER: anomaly_agent
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - anomaly_postgres_data:/var/lib/postgresql/data
+    networks:
+      - anomaly-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U anomaly_agent -d homelab_anomaly"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    # Note: Port 5432 is NOT published to the host as per requirements
+
+  anomaly-api:
+    build:
+      context: .
+      dockerfile: deploy/Dockerfile
+    container_name: anomaly-api
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql://anomaly_agent:${POSTGRES_PASSWORD}@anomaly-postgres:5432/homelab_anomaly
+    ports:
+      - "8001:8001"
+    depends_on:
+      anomaly-postgres:
+        condition: service_healthy
+    networks:
+      - anomaly-net
+
+volumes:
+  anomaly_postgres_data:
+
+networks:
+  anomaly-net:
+    name: anomaly-net
