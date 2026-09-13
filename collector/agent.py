@@ -3,12 +3,19 @@ import time
 import logging
 import platform
 from datetime import datetime, timezone
+from pathlib import Path
 
+from dotenv import load_dotenv
 import psutil
 import requests
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
+
+# Load project's .env file located at the project root
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+ENV_PATH = PROJECT_ROOT / ".env"
+load_dotenv(dotenv_path=ENV_PATH, override=False)
 
 NODE_ID = os.getenv("NODE_ID", "default-node")
 INGEST_URL = os.getenv("INGEST_URL", "http://localhost:8002/ingest")

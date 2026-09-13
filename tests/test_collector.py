@@ -1,8 +1,15 @@
 import pytest
 import time
+import importlib
 from unittest.mock import patch, MagicMock
 
+import collector.agent
 from collector.agent import Collector, INGEST_URL
+
+@pytest.fixture(autouse=True)
+def restore_agent_env():
+    yield
+    importlib.reload(collector.agent)
 
 @patch("collector.agent.psutil")
 def test_collector_metrics_generation(mock_psutil):
@@ -78,8 +85,76 @@ def test_collector_graceful_failure(caplog):
     assert "API down" in caplog.text
     collector.close()
 
-def test_collector_fallback_ingest_url():
-    assert INGEST_URL == "http://localhost:8002/ingest"
+def test_collector_fallback_ingest_url(monkeypatch):
+    """When .env and process env do not define INGEST_URL, it should use the default fallback."""
+    for key in ["NODE_ID", "INGEST_URL", "COLLECT_INTERVAL", "HAS_GPU"]:
+        monkeypatch.delenv(key, raising=False)
+    with patch("dotenv.load_dotenv"):
+        reloaded = importlib.reload(collector.agent)
+        assert reloaded.INGEST_URL == "http://localhost:8002/ingest"
+        assert reloaded.NODE_ID == "default-node"
+        assert reloaded.COLLECT_INTERVAL == 30
+        assert reloaded.HAS_GPU is False
+
+def test_collector_loads_dotenv_when_env_vars_absent(monkeypatch):
+    """Proves that .env values from the project root are loaded when process environment variables are absent."""
+    for key in ["NODE_ID", "INGEST_URL", "COLLECT_INTERVAL", "HAS_GPU"]:
+        monkeypatch.delenv(key, raising=False)
+        
+    reloaded = importlib.reload(collector.agent)
+    assert reloaded.NODE_ID == "alpha"
+    assert reloaded.INGEST_URL == "http://100.126.2.116:8002/ingest"
+    assert reloaded.COLLECT_INTERVAL == 30
+    assert reloaded.HAS_GPU is True
+
+def test_collector_loads_custom_dotenv_file_when_env_vars_absent(monkeypatch):
+    """Proves that values from a .env source are loaded when process environment variables are absent."""
+    import os
+    custom_values = {
+        "NODE_ID": "test-node-custom",
+        "INGEST_URL": "http://custom-test:8002/ingest",
+        "COLLECT_INTERVAL": "15",
+        "HAS_GPU": "false",
+    }
+    for key in ["NODE_ID", "INGEST_URL", "COLLECT_INTERVAL", "HAS_GPU"]:
+        monkeypatch.delenv(key, raising=False)
+
+    def mock_custom_load(dotenv_path=None, override=False, **kwargs):
+        for k, v in custom_values.items():
+            if override or k not in os.environ:
+                os.environ[k] = v
+        return True
+
+    with patch("dotenv.load_dotenv", side_effect=mock_custom_load):
+        reloaded = importlib.reload(collector.agent)
+        assert reloaded.NODE_ID == "test-node-custom"
+        assert reloaded.INGEST_URL == "http://custom-test:8002/ingest"
+        assert reloaded.COLLECT_INTERVAL == 15
+        assert reloaded.HAS_GPU is False
+
+def test_collector_calls_load_dotenv_with_project_root_env():
+    """Verify load_dotenv is called with the .env file located at the project root."""
+    with patch("dotenv.load_dotenv") as mock_load_dotenv:
+        importlib.reload(collector.agent)
+        mock_load_dotenv.assert_called_once()
+        called_path = mock_load_dotenv.call_args.kwargs.get("dotenv_path")
+        assert called_path == collector.agent.PROJECT_ROOT / ".env"
+        assert called_path.name == ".env"
+        assert called_path.parent == collector.agent.PROJECT_ROOT
+        assert mock_load_dotenv.call_args.kwargs.get("override") is False
+
+def test_collector_preserves_explicit_env_vars(monkeypatch):
+    """Proves that explicitly set process environment variables are preserved over .env values."""
+    monkeypatch.setenv("NODE_ID", "explicit-node-123")
+    monkeypatch.setenv("INGEST_URL", "http://explicit-url:8002/ingest")
+    monkeypatch.setenv("COLLECT_INTERVAL", "45")
+    monkeypatch.setenv("HAS_GPU", "false")
+    
+    reloaded = importlib.reload(collector.agent)
+    assert reloaded.NODE_ID == "explicit-node-123"
+    assert reloaded.INGEST_URL == "http://explicit-url:8002/ingest"
+    assert reloaded.COLLECT_INTERVAL == 45
+    assert reloaded.HAS_GPU is False
 
 def test_collector_session_persistence():
     import requests
