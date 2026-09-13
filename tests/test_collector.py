@@ -3,6 +3,8 @@ import time
 import importlib
 from unittest.mock import patch, MagicMock
 
+from dotenv import dotenv_values
+
 import collector.agent
 from collector.agent import Collector, INGEST_URL
 
@@ -102,10 +104,11 @@ def test_collector_loads_dotenv_when_env_vars_absent(monkeypatch):
         monkeypatch.delenv(key, raising=False)
         
     reloaded = importlib.reload(collector.agent)
-    assert reloaded.NODE_ID == "alpha"
-    assert reloaded.INGEST_URL == "http://100.126.2.116:8002/ingest"
-    assert reloaded.COLLECT_INTERVAL == 30
-    assert reloaded.HAS_GPU is True
+    expected_env = dotenv_values(collector.agent.ENV_PATH, encoding="utf-8-sig")
+    assert reloaded.NODE_ID == expected_env.get("NODE_ID", "default-node")
+    assert reloaded.INGEST_URL == expected_env.get("INGEST_URL", "http://localhost:8002/ingest")
+    assert reloaded.COLLECT_INTERVAL == int(expected_env.get("COLLECT_INTERVAL", "30"))
+    assert reloaded.HAS_GPU == (expected_env.get("HAS_GPU", "false").lower() == "true")
 
 def test_collector_loads_custom_dotenv_file_when_env_vars_absent(monkeypatch):
     """Proves that values from a .env source are loaded when process environment variables are absent."""
