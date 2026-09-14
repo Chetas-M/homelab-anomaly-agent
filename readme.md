@@ -56,6 +56,24 @@ CREATE INDEX idx_node_ts ON node_metrics (node_id, ts);
 *   `GET /health`: Basic health check.
 *   `POST /ingest`: Accepts JSON payloads containing the latest node metrics.
 *   `GET /last_seen/{node_id}`: Returns the last received timestamp and online status of the given node (considered offline if no metrics received for >120s).
+*   `GET /api/nodes`: List all known nodes and capabilities.
+*   `GET /api/nodes/{node_id}/latest`: Retrieve the latest single telemetry snapshot.
+*   `GET /api/nodes/{node_id}/metrics`: Query historical time-series data (supports `start`, `end`, `limit`).
+*   `GET /api/nodes/{node_id}/quality`: Data quality report over a given `window_hours`.
+
+## Frontend Dashboard
+The Phase 1.75 observability dashboard is built with React, Vite, and Apache ECharts.
+
+### Local Development
+1. `cd frontend`
+2. `npm install`
+3. The dashboard connects to the API at `http://localhost:8002` by default. You can override this by creating a `frontend/.env` file with `VITE_API_BASE_URL=http://your-ip:8002`.
+4. Start the dev server: `npm run dev`
+
+### Production Build
+1. `cd frontend`
+2. `npm run build`
+3. Serve the static assets in `frontend/dist` via Nginx, Caddy, or any static file server.
 
 ## Collector Configuration
 Collectors use environment variables to configure their behavior:
