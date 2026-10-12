@@ -32,32 +32,32 @@ const TIME_RANGES: TimeRangeOption[] = [
 const getChartOptions = (title: string, data: any[], seriesKeys: string[], seriesNames: string[], yAxisFormatter: string) => ({
   title: {
     text: title,
-    textStyle: { color: '#e0e0e0', fontSize: 14, fontWeight: 'normal' },
-    left: '10px',
+    textStyle: { color: '#f4f4f5', fontSize: 13, fontWeight: 600 },
+    left: '12px',
     top: '10px'
   },
   tooltip: {
     trigger: 'axis',
-    backgroundColor: '#1a1a1a',
-    borderColor: '#333',
-    textStyle: { color: '#e0e0e0' }
+    backgroundColor: '#18181b',
+    borderColor: '#3f3f46',
+    textStyle: { color: '#f4f4f5' }
   },
   legend: {
     data: seriesNames,
-    textStyle: { color: '#888' },
+    textStyle: { color: '#a1a1aa', fontSize: 11 },
     top: '10px',
-    right: '10px'
+    right: '12px'
   },
   grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
   xAxis: {
     type: 'time',
-    axisLabel: { color: '#888' },
+    axisLabel: { color: '#a1a1aa', fontSize: 11 },
     splitLine: { show: false }
   },
   yAxis: {
     type: 'value',
-    axisLabel: { color: '#888', formatter: yAxisFormatter },
-    splitLine: { lineStyle: { color: '#333' } }
+    axisLabel: { color: '#a1a1aa', fontSize: 11, formatter: yAxisFormatter },
+    splitLine: { lineStyle: { color: '#27272a' } }
   },
   series: seriesKeys.map((key, i) => ({
     name: seriesNames[i],
@@ -78,55 +78,56 @@ const getAnomalyChartOptions = (data: any[]) => {
     title: {
       text: 'Model Anomaly Score & Classification Over Time',
       subtext: 'Isolation Forest inference output: is_anomalous=true indicates anomalous, score=null indicates warmup',
-      textStyle: { color: '#e0e0e0', fontSize: 14, fontWeight: 'normal' },
-      subtextStyle: { color: '#888', fontSize: 11 },
-      left: '10px',
+      textStyle: { color: '#f4f4f5', fontSize: 13, fontWeight: 600 },
+      subtextStyle: { color: '#a1a1aa', fontSize: 11 },
+      left: '12px',
       top: '10px'
     },
     tooltip: {
       trigger: 'axis',
-      backgroundColor: '#1a1a1a',
-      borderColor: '#333',
-      textStyle: { color: '#e0e0e0' },
+      backgroundColor: '#18181b',
+      borderColor: '#3f3f46',
+      textStyle: { color: '#f4f4f5' },
       formatter: (params: any) => {
         if (!params || !params.length) return '';
         const dateStr = formatDateTime(params[0].value[0]);
         const scoreVal = params[0].value[1];
         const pointData = data.find(d => d.ts === params[0].value[0]);
-        let statusBadge = '<span style="color:#22c55e;">NORMAL</span>';
+        let statusBadge = '<span style="color:#22c55e;font-weight:600;">NORMAL</span>';
         if (pointData?.is_anomalous === true) {
-          statusBadge = '<span style="color:#ef4444;font-weight:bold;">ANOMALY</span>';
+          statusBadge = '<span style="color:#ef4444;font-weight:700;">ANOMALY</span>';
         } else if (pointData?.is_anomalous === null || pointData?.score === null) {
-          statusBadge = '<span style="color:#f59e0b;">WARMUP</span>';
+          statusBadge = '<span style="color:#eab308;font-weight:600;">WARMUP</span>';
         }
 
         return `
-          <div style="font-family: monospace; font-size: 12px;">
-            <div>${dateStr}</div>
-            <div style="margin-top: 4px;">Classification: ${statusBadge}</div>
-            <div>Score: <strong>${scoreVal !== null && scoreVal !== undefined ? Number(scoreVal).toFixed(4) : 'Warmup/None'}</strong></div>
-            ${pointData?.cpu_pct !== undefined ? `<div>CPU: ${pointData.cpu_pct?.toFixed(1)}% | Mem: ${pointData.mem_pct?.toFixed(1)}%</div>` : ''}
+          <div style="font-family: monospace; font-size: 12px; line-height: 1.5;">
+            <div style="color: #a1a1aa; border-bottom: 1px solid #3f3f46; padding-bottom: 3px; margin-bottom: 4px;">${dateStr}</div>
+            <div>Classification: ${statusBadge}</div>
+            <div>Score: <strong style="color: #f4f4f5;">${scoreVal !== null && scoreVal !== undefined ? Number(scoreVal).toFixed(4) : 'Warmup/None'}</strong></div>
+            ${pointData?.cpu_pct !== undefined ? `<div style="color: #a1a1aa; margin-top: 3px;">CPU: ${pointData.cpu_pct?.toFixed(1)}% | Mem: ${pointData.mem_pct?.toFixed(1)}%</div>` : ''}
           </div>
         `;
       }
     },
     legend: {
       data: ['Anomaly Score', 'Anomalous Sample', 'Warmup Sample'],
-      textStyle: { color: '#888' },
+      textStyle: { color: '#a1a1aa', fontSize: 11 },
       top: '10px',
-      right: '10px'
+      right: '12px'
     },
     grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
     xAxis: {
       type: 'time',
-      axisLabel: { color: '#888' },
+      axisLabel: { color: '#a1a1aa', fontSize: 11 },
       splitLine: { show: false }
     },
     yAxis: {
       type: 'value',
       name: 'Score',
-      axisLabel: { color: '#888' },
-      splitLine: { lineStyle: { color: '#333' } }
+      nameTextStyle: { color: '#a1a1aa', fontSize: 11 },
+      axisLabel: { color: '#a1a1aa', fontSize: 11 },
+      splitLine: { lineStyle: { color: '#27272a' } }
     },
     series: [
       {
@@ -143,8 +144,8 @@ const getAnomalyChartOptions = (data: any[]) => {
           data: [
             {
               yAxis: 0,
-              lineStyle: { color: '#f59e0b', type: 'dashed', width: 1.5 },
-              label: { formatter: 'Threshold (0.0)', position: 'end', color: '#f59e0b', fontSize: 10 }
+              lineStyle: { color: '#eab308', type: 'dashed', width: 1.5 },
+              label: { formatter: 'Threshold (0.0)', position: 'end', color: '#eab308', fontSize: 10 }
             }
           ]
         }
@@ -162,7 +163,7 @@ const getAnomalyChartOptions = (data: any[]) => {
         type: 'scatter',
         symbol: 'triangle',
         symbolSize: 6,
-        itemStyle: { color: '#f59e0b' },
+        itemStyle: { color: '#eab308' },
         data: warmupData
       }
     ]
@@ -293,29 +294,50 @@ export default function NodeDetail() {
       
       <div className="header">
         <div>
-          <h1 className="flex items-center gap-2">
+          <div className="flex items-center gap-2 mb-1">
             <span style={{ 
               width: '12px', height: '12px', borderRadius: '50%', 
               backgroundColor: getNodeIdentityColor(node.node_id) 
             }}></span>
-            <span style={{ fontSize: '1.75rem', fontWeight: 600 }}>{getDisplayName(node.node_id)}</span>
-            <span className="text-sm text-muted mono ml-2">({node.node_id})</span>
-          </h1>
-          <div className="text-sm text-muted mt-2 flex items-center gap-4">
-            <span className="flex items-center gap-1">
-              {node.online ? <span className="status-dot online"></span> : <span className="status-dot offline"></span>}
-              {node.online ? 'Online (reporting)' : 'Stale / Offline'}
-            </span>
-            <span>Last seen: {formatDateTime(latest?.ts || node.last_seen)}</span>
-            <span>First seen: {formatDateTime(node.first_seen)}</span>
+            <span style={{ fontSize: '1.75rem', fontWeight: 700, letterSpacing: '-0.02em' }}>{getDisplayName(node.node_id)}</span>
+            <span className="text-sm text-muted mono ml-1">({node.node_id})</span>
+            {node.online ? (
+              <span className="badge badge-success ml-2">● LIVE REPORTING</span>
+            ) : (
+              <span className="badge badge-stale ml-2">○ HISTORICAL ARCHIVE</span>
+            )}
+          </div>
+          <div className="text-xs text-muted flex items-center gap-4">
+            <span>Last seen: <strong className="text-secondary mono">{formatDateTime(latest?.ts || node.last_seen)}</strong></span>
+            <span>First seen: <span className="mono">{formatDateTime(node.first_seen)}</span></span>
           </div>
         </div>
         <div className="flex gap-2">
           <Link to={`/node/${node.node_id}/quality`} className="btn">
-            <ShieldAlert size={16} /> Data Quality
+            <ShieldAlert size={16} /> Data Quality Report
           </Link>
         </div>
       </div>
+
+      {/* Prominent Historical Banner if Node is Offline */}
+      {!node.online && (
+        <div className="card mb-6" style={{ 
+          backgroundColor: 'rgba(234, 179, 8, 0.05)', 
+          border: '1px solid rgba(234, 179, 8, 0.3)',
+          padding: '14px 18px'
+        }}>
+          <div className="flex items-center gap-2 mb-1">
+            <AlertTriangle size={16} className="text-warning" />
+            <span className="mono font-bold text-xs text-warning tracking-wider">
+              HISTORICAL BASELINE ARCHIVE • NODE OFFLINE
+            </span>
+          </div>
+          <p className="text-xs text-secondary leading-relaxed">
+            <strong>{getDisplayName(node.node_id)}</strong> is currently not reporting live telemetry (collector offline or host unreachable). 
+            All telemetry charts, Isolation Forest anomaly scores, and model evaluations displayed below are <strong>historical records</strong> preserved in PostgreSQL from prior runs. They do not represent real-time streaming data.
+          </p>
+        </div>
+      )}
 
       {/* Live Shadow Canary Section (Active on Beta) */}
       {shadowSummary?.candidate_active && (
@@ -484,28 +506,35 @@ export default function NodeDetail() {
           borderColor: isSustained ? 'var(--color-error)' : 'var(--border-color)',
           backgroundColor: isSustained ? 'rgba(239, 68, 68, 0.08)' : 'inherit'
         }}>
-          <div className="metric-label flex items-center gap-1">
-            <ShieldAlert size={14} style={{ color: isSustained ? 'var(--color-error)' : isAnomalous ? 'var(--color-warning)' : 'var(--color-success)' }} />
-            Sustained Alert State
+          <div className="metric-label flex items-center justify-between">
+            <span className="flex items-center gap-1">
+              <ShieldAlert size={14} style={{ color: isSustained ? 'var(--color-error)' : isAnomalous ? 'var(--color-warning)' : 'var(--color-success)' }} />
+              Sustained Alert State
+            </span>
+            <div className="streak-pips">
+              <span className={`streak-pip ${isSustained ? 'filled-anom' : streakCount >= 1 ? 'filled-warn' : ''}`}></span>
+              <span className={`streak-pip ${isSustained ? 'filled-anom' : streakCount >= 2 ? 'filled-warn' : ''}`}></span>
+              <span className={`streak-pip ${isSustained ? 'filled-anom' : streakCount >= 3 ? 'filled-anom' : ''}`}></span>
+            </div>
           </div>
-          <div className="mono" style={{ 
-            fontSize: '1.5rem', 
+          <div className="mono font-bold mt-1" style={{ 
+            fontSize: '1.4rem', 
             lineHeight: 1.2, 
             color: isSustained ? 'var(--color-error)' : isAnomalous ? 'var(--color-warning)' : 'var(--color-success)' 
           }}>
             {isSustained ? 'SUSTAINED (3/3)' : isAnomalous ? `STREAK (${streakCount}/3)` : 'NORMAL (0/3)'}
           </div>
           <div className="text-xs text-muted mt-2">
-            {isSustained ? 'Active alert (≥ 3 samples)' : `Threshold: 3 consecutive anomalies`}
+            {isSustained ? 'Active alert (≥ 3 consecutive samples)' : `Threshold: 3 consecutive anomalies`}
           </div>
         </div>
 
         <div className="card">
           <div className="metric-label">Anomaly Score</div>
-          <div className="mono" style={{ fontSize: '1.75rem', lineHeight: 1.2 }}>
+          <div className="mono font-bold" style={{ fontSize: '1.5rem', lineHeight: 1.2, color: 'var(--text-primary)' }}>
             {scoreVal !== null && scoreVal !== undefined ? scoreVal.toFixed(4) : 'Warmup'}
           </div>
-          <div className="text-xs text-muted mt-2">Threshold: 0.0 (contam=0.01)</div>
+          <div className="text-xs text-muted mt-2">Threshold: 0.0000 (contam=0.01)</div>
         </div>
 
         <MetricCard title="CPU" value={formatPercent(latest?.cpu_pct)} subValue="Utilization" />
@@ -544,58 +573,40 @@ export default function NodeDetail() {
             Per-Metric Baseline Attribution & Deviation Analysis
           </h3>
           {elevatedMetrics.length > 0 && (
-            <span style={{
-              fontSize: '0.75rem',
-              fontWeight: 600,
-              padding: '2px 8px',
-              borderRadius: '4px',
-              backgroundColor: 'rgba(239, 68, 68, 0.15)',
-              color: 'var(--color-error)'
-            }}>
+            <span className="badge badge-error">
               {elevatedMetrics.length} Metric{elevatedMetrics.length > 1 ? 's' : ''} Elevated
             </span>
           )}
         </div>
-        <p className="text-xs text-muted mb-4">
+        <p className="text-xs text-muted mb-4 leading-relaxed">
           Baseline Attribution Layer: Robust Z-Scores computed using rolling median and MAD against trained baseline distributions. Identifies metric-level evidence and abnormal signals without claiming causal explanation of the Isolation Forest tree structure.
         </p>
 
         <div className="grid grid-cols-3 gap-4">
           {attributions.map(attr => {
-            let statusColor = 'var(--text-muted)';
-            let statusBg = 'rgba(255, 255, 255, 0.05)';
+            let badgeClass = 'badge badge-outline';
             if (attr.status === 'ELEVATED') {
-              statusColor = 'var(--color-error)';
-              statusBg = 'rgba(239, 68, 68, 0.1)';
+              badgeClass = 'badge badge-error';
             } else if (attr.status === 'NORMAL') {
-              statusColor = 'var(--color-success)';
-              statusBg = 'rgba(34, 197, 94, 0.08)';
+              badgeClass = 'badge badge-success';
             } else if (attr.status === 'LOW') {
-              statusColor = '#38bdf8';
-              statusBg = 'rgba(56, 189, 248, 0.08)';
+              badgeClass = 'badge badge-info';
             }
 
             return (
               <div key={attr.metric_key} className="card p-3" style={{
                 borderColor: attr.status === 'ELEVATED' ? 'rgba(239, 68, 68, 0.4)' : 'var(--border-color)',
-                backgroundColor: attr.status === 'ELEVATED' ? 'rgba(239, 68, 68, 0.03)' : 'inherit'
+                backgroundColor: attr.status === 'ELEVATED' ? 'rgba(239, 68, 68, 0.04)' : 'inherit'
               }}>
                 <div className="flex justify-between items-center mb-1">
-                  <span className="text-xs font-semibold">{attr.display_name}</span>
-                  <span style={{
-                    fontSize: '0.65rem',
-                    fontWeight: 700,
-                    padding: '1px 6px',
-                    borderRadius: '3px',
-                    backgroundColor: statusBg,
-                    color: statusColor
-                  }}>
+                  <span className="text-xs font-semibold text-primary">{attr.display_name}</span>
+                  <span className={badgeClass}>
                     {attr.status}
                   </span>
                 </div>
 
                 <div className="flex items-baseline justify-between my-1">
-                  <span className="mono font-bold" style={{ fontSize: '1.25rem' }}>
+                  <span className="mono font-bold text-primary" style={{ fontSize: '1.25rem' }}>
                     {attr.formatted_val}
                   </span>
                   <span className="mono text-xs text-muted">
@@ -604,10 +615,10 @@ export default function NodeDetail() {
                 </div>
 
                 <div className="text-xs text-muted mono mb-2">
-                  Ref Range: {attr.reference_range}
+                  Ref Range: <span className="text-secondary">{attr.reference_range}</span>
                 </div>
 
-                <div className="text-xs text-muted" style={{ fontSize: '0.75rem', lineHeight: 1.3 }}>
+                <div className="text-xs text-secondary leading-relaxed" style={{ fontSize: '0.75rem' }}>
                   {attr.explanation}
                 </div>
               </div>
