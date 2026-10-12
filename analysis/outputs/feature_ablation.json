@@ -1,0 +1,38 @@
+{
+  "alpha": {
+    "current": {
+      "precision": 0.833,
+      "recall": 1.0,
+      "f1": 0.909
+    },
+    "with_temporal_and_residual": {
+      "precision": 0.818,
+      "recall": 0.9,
+      "f1": 0.857
+    }
+  },
+  "beta": {
+    "current": {
+      "precision": 0.9,
+      "recall": 0.9,
+      "f1": 0.9
+    },
+    "with_temporal_and_residual": {
+      "precision": 1.0,
+      "recall": 0.9,
+      "f1": 0.947
+    }
+  },
+  "gamma": {
+    "current": {
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0
+    },
+    "with_temporal_and_residual": {
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0
+    }
+  }
+}

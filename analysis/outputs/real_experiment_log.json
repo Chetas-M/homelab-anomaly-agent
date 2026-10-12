@@ -1,0 +1,23 @@
+[
+  {
+    "node_id": "alpha-win",
+    "experiment_id": "real_alpha_cpu_1790490330",
+    "stress_type": "cpu",
+    "start_time_utc": "2026-09-27T06:23:29.896129+00:00",
+    "end_time_utc": "2026-09-27T06:25:30.256365+00:00"
+  },
+  {
+    "node_id": "beta",
+    "experiment_id": "real_beta_disk_1790490391",
+    "stress_type": "disk",
+    "start_time_utc": "2026-09-27T06:23:29.897909+00:00",
+    "end_time_utc": "2026-09-27T06:26:31.555365+00:00"
+  },
+  {
+    "node_id": "gamma",
+    "experiment_id": "real_gamma_net_1790490595",
+    "stress_type": "net",
+    "start_time_utc": "2026-09-27T06:23:29.901088+00:00",
+    "end_time_utc": "2026-09-27T06:29:55.253731+00:00"
+  }
+]

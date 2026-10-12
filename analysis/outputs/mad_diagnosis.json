@@ -1,0 +1,491 @@
+{
+  "gamma": {
+    "num_features": 25,
+    "features_with_mad_zero": 3,
+    "median_mad": 0.393678992289626,
+    "feature_details": {
+      "id": {
+        "train_median": 1907.0,
+        "train_mad": 200.0,
+        "eval_exceeds_3": 269,
+        "eval_exceeds_pct": 0.96415770609319
+      },
+      "cpu_pct": {
+        "train_median": 11.979820817102244,
+        "train_mad": 3.6295551318981563,
+        "eval_exceeds_3": 0,
+        "eval_exceeds_pct": 0.0
+      },
+      "mem_pct": {
+        "train_median": 40.19480674959131,
+        "train_mad": 5.1582529595067825,
+        "eval_exceeds_3": 0,
+        "eval_exceeds_pct": 0.0
+      },
+      "swap_pct": {
+        "train_median": 0.0,
+        "train_mad": 0.0,
+        "eval_exceeds_3": 0,
+        "eval_exceeds_pct": 0.0
+      },
+      "disk_read_bps": {
+        "train_median": 573.8370846520295,
+        "train_mad": 224.34165723950423,
+        "eval_exceeds_3": 0,
+        "eval_exceeds_pct": 0.0
+      },
+      "disk_write_bps": {
+        "train_median": 569.7532862739023,
+        "train_mad": 228.56388215345396,
+        "eval_exceeds_3": 0,
+        "eval_exceeds_pct": 0.0
+      },
+      "disk_used_pct": {
+        "train_median": 45.116836433388286,
+        "train_mad": 2.4862921229467645,
+        "eval_exceeds_3": 0,
+        "eval_exceeds_pct": 0.0
+      },
+      "net_in_bps": {
+        "train_median": 3207.077841303215,
+        "train_mad": 998.7452456863502,
+        "eval_exceeds_3": 0,
+        "eval_exceeds_pct": 0.0
+      },
+      "net_out_bps": {
+        "train_median": 3129.7325648994333,
+        "train_mad": 1128.2354535524423,
+        "eval_exceeds_3": 10,
+        "eval_exceeds_pct": 0.035842293906810034
+      },
+      "load1": {
+        "train_median": 0.5464021808746405,
+        "train_mad": 0.208313150596785,
+        "eval_exceeds_3": 0,
+        "eval_exceeds_pct": 0.0
+      },
+      "load5": {
+        "train_median": 0.5384040770014131,
+        "train_mad": 0.2212340710391184,
+        "eval_exceeds_3": 0,
+        "eval_exceeds_pct": 0.0
+      },
+      "load15": {
+        "train_median": 0.5246743596460652,
+        "train_mad": 0.1993994349785888,
+        "eval_exceeds_3": 0,
+        "eval_exceeds_pct": 0.0
+      },
+      "temp_c": {
+        "train_median": 40.166782697456604,
+        "train_mad": 5.269004471515402,
+        "eval_exceeds_3": 0,
+        "eval_exceeds_pct": 0.0
+      },
+      "gpu_util_pct": {
+        "train_median": 0.0,
+        "train_mad": 0.0,
+        "eval_exceeds_3": 0,
+        "eval_exceeds_pct": 0.0
+      },
+      "gpu_vram_pct": {
+        "train_median": 0.0,
+        "train_mad": 0.0,
+        "eval_exceeds_3": 0,
+        "eval_exceeds_pct": 0.0
+      },
+      "disk_read_bps_log1p": {
+        "train_median": 6.354086669611579,
+        "train_mad": 0.3657319612301473,
+        "eval_exceeds_3": 6,
+        "eval_exceeds_pct": 0.021505376344086023
+      },
+      "disk_write_bps_log1p": {
+        "train_median": 6.3469570432100655,
+        "train_mad": 0.38489195210303073,
+        "eval_exceeds_3": 1,
+        "eval_exceeds_pct": 0.0035842293906810036
+      },
+      "net_in_bps_log1p": {
+        "train_median": 8.073427233437412,
+        "train_mad": 0.31181903993429927,
+        "eval_exceeds_3": 0,
+        "eval_exceeds_pct": 0.0
+      },
+      "net_out_bps_log1p": {
+        "train_median": 8.049022302443387,
+        "train_mad": 0.33325526082836276,
+        "eval_exceeds_3": 10,
+        "eval_exceeds_pct": 0.035842293906810034
+      },
+      "cpu_pct_roll_mean_5min": {
+        "train_median": 11.985567454055811,
+        "train_mad": 0.741076864534989,
+        "eval_exceeds_3": 8,
+        "eval_exceeds_pct": 0.02867383512544803
+      },
+      "mem_pct_roll_mean_5min": {
+        "train_median": 40.015040100253216,
+        "train_mad": 1.1066495979080742,
+        "eval_exceeds_3": 0,
+        "eval_exceeds_pct": 0.0
+      },
+      "cpu_pct_roll_std_5min": {
+        "train_median": 4.329027355257183,
+        "train_mad": 0.393678992289626,
+        "eval_exceeds_3": 4,
+        "eval_exceeds_pct": 0.014336917562724014
+      },
+      "mem_pct_roll_std_5min": {
+        "train_median": 5.914709777291008,
+        "train_mad": 0.4902358066062451,
+        "eval_exceeds_3": 8,
+        "eval_exceeds_pct": 0.02867383512544803
+      },
+      "mem_pct_roc": {
+        "train_median": -0.004258235261842255,
+        "train_mad": 0.31163234249961624,
+        "eval_exceeds_3": 0,
+        "eval_exceeds_pct": 0.0
+      },
+      "disk_used_pct_roc": {
+        "train_median": 0.009389683548860005,
+        "train_mad": 0.1637625953760743,
+        "eval_exceeds_3": 0,
+        "eval_exceeds_pct": 0.0
+      }
+    },
+    "eval_exceedance_rates": {
+      "at_least_1": 1.0,
+      "at_least_2": 0.1111111111111111,
+      "at_least_3": 0.017921146953405017
+    },
+    "theoretical_family_wise_exceedance": 0.06535760618259778
+  },
+  "alpha": {
+    "num_features": 25,
+    "features_with_mad_zero": 0,
+    "median_mad": 2.0,
+    "feature_details": {
+      "id": {
+        "train_median": 1002.0,
+        "train_mad": 561.0,
+        "eval_exceeds_3": 0,
+        "eval_exceeds_pct": 0.0
+      },
+      "cpu_pct": {
+        "train_median": 16.82255931018301,
+        "train_mad": 6.957948403896742,
+        "eval_exceeds_3": 10,
+        "eval_exceeds_pct": 0.035842293906810034
+      },
+      "mem_pct": {
+        "train_median": 48.521786785415145,
+        "train_mad": 9.478213214584855,
+        "eval_exceeds_3": 0,
+        "eval_exceeds_pct": 0.0
+      },
+      "swap_pct": {
+        "train_median": 10.0,
+        "train_mad": 2.0,
+        "eval_exceeds_3": 279,
+        "eval_exceeds_pct": 1.0
+      },
+      "disk_read_bps": {
+        "train_median": 2618.0,
+        "train_mad": 2171.3261921736503,
+        "eval_exceeds_3": 0,
+        "eval_exceeds_pct": 0.0
+      },
+      "disk_write_bps": {
+        "train_median": 9915.0,
+        "train_mad": 9256.456245617168,
+        "eval_exceeds_3": 0,
+        "eval_exceeds_pct": 0.0
+      },
+      "disk_used_pct": {
+        "train_median": 45.5,
+        "train_mad": 1.2169260225246532,
+        "eval_exceeds_3": 1,
+        "eval_exceeds_pct": 0.0035842293906810036
+      },
+      "net_in_bps": {
+        "train_median": 27301.0,
+        "train_mad": 24185.0,
+        "eval_exceeds_3": 0,
+        "eval_exceeds_pct": 0.0
+      },
+      "net_out_bps": {
+        "train_median": 18805.0,
+        "train_mad": 15071.240907979081,
+        "eval_exceeds_3": 0,
+        "eval_exceeds_pct": 0.0
+      },
+      "load1": {
+        "train_median": 0.84,
+        "train_mad": 0.33999999999999997,
+        "eval_exceeds_3": 8,
+        "eval_exceeds_pct": 0.02867383512544803
+      },
+      "load5": {
+        "train_median": 0.86,
+        "train_mad": 0.2400000000000001,
+        "eval_exceeds_3": 6,
+        "eval_exceeds_pct": 0.021505376344086023
+      },
+      "load15": {
+        "train_median": 0.8,
+        "train_mad": 0.19252932829222624,
+        "eval_exceeds_3": 0,
+        "eval_exceeds_pct": 0.0
+      },
+      "temp_c": {
+        "train_median": 48.19404601263503,
+        "train_mad": 6.905953987364974,
+        "eval_exceeds_3": 8,
+        "eval_exceeds_pct": 0.02867383512544803
+      },
+      "gpu_util_pct": {
+        "train_median": 14.2,
+        "train_mad": 14.2,
+        "eval_exceeds_3": 0,
+        "eval_exceeds_pct": 0.0
+      },
+      "gpu_vram_pct": {
+        "train_median": 32.3,
+        "train_mad": 24.200000000000003,
+        "eval_exceeds_3": 0,
+        "eval_exceeds_pct": 0.0
+      },
+      "disk_read_bps_log1p": {
+        "train_median": 7.870547844507712,
+        "train_mad": 0.8528461774924239,
+        "eval_exceeds_3": 0,
+        "eval_exceeds_pct": 0.0
+      },
+      "disk_write_bps_log1p": {
+        "train_median": 9.201904893155081,
+        "train_mad": 0.9484817990496524,
+        "eval_exceeds_3": 20,
+        "eval_exceeds_pct": 0.07168458781362007
+      },
+      "net_in_bps_log1p": {
+        "train_median": 10.214715238562922,
+        "train_mad": 0.8113289678847746,
+        "eval_exceeds_3": 0,
+        "eval_exceeds_pct": 0.0
+      },
+      "net_out_bps_log1p": {
+        "train_median": 9.841931246837023,
+        "train_mad": 0.6449165216483106,
+        "eval_exceeds_3": 9,
+        "eval_exceeds_pct": 0.03225806451612903
+      },
+      "cpu_pct_roll_mean_5min": {
+        "train_median": 14.497711614981608,
+        "train_mad": 4.261787900101915,
+        "eval_exceeds_3": 14,
+        "eval_exceeds_pct": 0.05017921146953405
+      },
+      "mem_pct_roll_mean_5min": {
+        "train_median": 45.4,
+        "train_mad": 7.200000000000003,
+        "eval_exceeds_3": 0,
+        "eval_exceeds_pct": 0.0
+      },
+      "cpu_pct_roll_std_5min": {
+        "train_median": 4.356073099440924,
+        "train_mad": 0.5662600874242438,
+        "eval_exceeds_3": 18,
+        "eval_exceeds_pct": 0.06451612903225806
+      },
+      "mem_pct_roll_std_5min": {
+        "train_median": 5.356697300201452,
+        "train_mad": 0.8243280456461286,
+        "eval_exceeds_3": 0,
+        "eval_exceeds_pct": 0.0
+      },
+      "mem_pct_roc": {
+        "train_median": 0.0,
+        "train_mad": 0.0645054070431551,
+        "eval_exceeds_3": 87,
+        "eval_exceeds_pct": 0.3118279569892473
+      },
+      "disk_used_pct_roc": {
+        "train_median": 0.0,
+        "train_mad": 0.026649356246433366,
+        "eval_exceeds_3": 109,
+        "eval_exceeds_pct": 0.3906810035842294
+      }
+    },
+    "eval_exceedance_rates": {
+      "at_least_1": 1.0,
+      "at_least_2": 0.6810035842293907,
+      "at_least_3": 0.1935483870967742
+    },
+    "theoretical_family_wise_exceedance": 0.06535760618259778
+  },
+  "beta": {
+    "num_features": 25,
+    "features_with_mad_zero": 2,
+    "median_mad": 0.9084507586388,
+    "feature_details": {
+      "id": {
+        "train_median": 1123.0,
+        "train_mad": 450.0,
+        "eval_exceeds_3": 0,
+        "eval_exceeds_pct": 0.0
+      },
+      "cpu_pct": {
+        "train_median": 17.324859322525942,
+        "train_mad": 7.2876429346982246,
+        "eval_exceeds_3": 0,
+        "eval_exceeds_pct": 0.0
+      },
+      "mem_pct": {
+        "train_median": 48.8,
+        "train_mad": 9.804881921241353,
+        "eval_exceeds_3": 0,
+        "eval_exceeds_pct": 0.0
+      },
+      "swap_pct": {
+        "train_median": 10.0,
+        "train_mad": 2.0,
+        "eval_exceeds_3": 279,
+        "eval_exceeds_pct": 1.0
+      },
+      "disk_read_bps": {
+        "train_median": 2618.0,
+        "train_mad": 1983.816701362129,
+        "eval_exceeds_3": 0,
+        "eval_exceeds_pct": 0.0
+      },
+      "disk_write_bps": {
+        "train_median": 10320.0,
+        "train_mad": 9633.174131876129,
+        "eval_exceeds_3": 10,
+        "eval_exceeds_pct": 0.035842293906810034
+      },
+      "disk_used_pct": {
+        "train_median": 46.0,
+        "train_mad": 0.974822416260892,
+        "eval_exceeds_3": 41,
+        "eval_exceeds_pct": 0.14695340501792115
+      },
+      "net_in_bps": {
+        "train_median": 27301.0,
+        "train_mad": 23555.697768427854,
+        "eval_exceeds_3": 0,
+        "eval_exceeds_pct": 0.0
+      },
+      "net_out_bps": {
+        "train_median": 18805.0,
+        "train_mad": 14721.430205133318,
+        "eval_exceeds_3": 0,
+        "eval_exceeds_pct": 0.0
+      },
+      "load1": {
+        "train_median": 0.83,
+        "train_mad": 0.31999999999999995,
+        "eval_exceeds_3": 0,
+        "eval_exceeds_pct": 0.0
+      },
+      "load5": {
+        "train_median": 0.8403084968444106,
+        "train_mad": 0.23030849684441057,
+        "eval_exceeds_3": 0,
+        "eval_exceeds_pct": 0.0
+      },
+      "load15": {
+        "train_median": 0.8,
+        "train_mad": 0.11296065302670677,
+        "eval_exceeds_3": 66,
+        "eval_exceeds_pct": 0.23655913978494625
+      },
+      "temp_c": {
+        "train_median": 47.86838310289559,
+        "train_mad": 6.331616897104411,
+        "eval_exceeds_3": 0,
+        "eval_exceeds_pct": 0.0
+      },
+      "gpu_util_pct": {
+        "train_median": 0.0,
+        "train_mad": 0.0,
+        "eval_exceeds_3": 0,
+        "eval_exceeds_pct": 0.0
+      },
+      "gpu_vram_pct": {
+        "train_median": 0.0,
+        "train_mad": 0.0,
+        "eval_exceeds_3": 0,
+        "eval_exceeds_pct": 0.0
+      },
+      "disk_read_bps_log1p": {
+        "train_median": 7.870547844507712,
+        "train_mad": 0.8528461774924239,
+        "eval_exceeds_3": 0,
+        "eval_exceeds_pct": 0.0
+      },
+      "disk_write_bps_log1p": {
+        "train_median": 9.241935933565934,
+        "train_mad": 0.9084507586388,
+        "eval_exceeds_3": 20,
+        "eval_exceeds_pct": 0.07168458781362007
+      },
+      "net_in_bps_log1p": {
+        "train_median": 10.214715238562922,
+        "train_mad": 0.8111174051678454,
+        "eval_exceeds_3": 0,
+        "eval_exceeds_pct": 0.0
+      },
+      "net_out_bps_log1p": {
+        "train_median": 9.841931246837023,
+        "train_mad": 0.6449165216483106,
+        "eval_exceeds_3": 9,
+        "eval_exceeds_pct": 0.03225806451612903
+      },
+      "cpu_pct_roll_mean_5min": {
+        "train_median": 14.985914725605497,
+        "train_mad": 4.227418607727834,
+        "eval_exceeds_3": 0,
+        "eval_exceeds_pct": 0.0
+      },
+      "mem_pct_roll_mean_5min": {
+        "train_median": 45.0,
+        "train_mad": 6.650255452864812,
+        "eval_exceeds_3": 0,
+        "eval_exceeds_pct": 0.0
+      },
+      "cpu_pct_roll_std_5min": {
+        "train_median": 4.4548244795612035,
+        "train_mad": 0.593819266917818,
+        "eval_exceeds_3": 0,
+        "eval_exceeds_pct": 0.0
+      },
+      "mem_pct_roll_std_5min": {
+        "train_median": 5.537383638884124,
+        "train_mad": 0.867213045712099,
+        "eval_exceeds_3": 0,
+        "eval_exceeds_pct": 0.0
+      },
+      "mem_pct_roc": {
+        "train_median": 0.0002500000000000016,
+        "train_mad": 0.07067428451698378,
+        "eval_exceeds_3": 76,
+        "eval_exceeds_pct": 0.2724014336917563
+      },
+      "disk_used_pct_roc": {
+        "train_median": 0.0,
+        "train_mad": 0.026333364146745947,
+        "eval_exceeds_3": 125,
+        "eval_exceeds_pct": 0.44802867383512546
+      }
+    },
+    "eval_exceedance_rates": {
+      "at_least_1": 1.0,
+      "at_least_2": 0.7777777777777778,
+      "at_least_3": 0.3727598566308244
+    },
+    "theoretical_family_wise_exceedance": 0.06535760618259778
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "exp_alpha_cpu_1789325932": {
+    "expected_samples": 11,
+    "actual_samples": 10,
+    "missing_samples": 1
+  },
+  "exp_beta_disk_1789327132": {
+    "expected_samples": 11,
+    "actual_samples": 10,
+    "missing_samples": 1
+  },
+  "exp_gamma_net_1789328332": {
+    "expected_samples": 11,
+    "actual_samples": 10,
+    "missing_samples": 1
+  }
+}

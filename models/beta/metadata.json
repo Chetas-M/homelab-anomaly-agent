@@ -1,0 +1,18 @@
+{
+  "node_id": "beta",
+  "model_type": "IsolationForest",
+  "hyperparameters": {
+    "n_estimators": 100,
+    "max_samples": "auto",
+    "contamination": 0.01,
+    "random_state": 42
+  },
+  "training_samples": 40173,
+  "feature_count": 31,
+  "training_start_utc": "2026-09-13T06:39:37.110084+00:00",
+  "training_end_utc": "2026-09-27T05:53:06.528997+00:00",
+  "random_seed": 42,
+  "sklearn_version": "1.8.0",
+  "python_version": "3.13.7",
+  "creation_time_utc": "2026-09-27T08:29:01.909619+00:00"
+}

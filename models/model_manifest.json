@@ -1,0 +1,39 @@
+{
+  "pipeline_version": "1.0",
+  "training_time_utc": "2026-09-27T08:29:00.975614+00:00",
+  "cutoff_time_utc": "2026-09-27T05:53:29.896129+00:00",
+  "excluded_experiment_periods": [
+    {
+      "node": "alpha-win",
+      "start": "2026-09-27T06:23:29.896129+00:00",
+      "end": "2026-09-27T06:25:30.256365+00:00"
+    },
+    {
+      "node": "beta",
+      "start": "2026-09-27T06:23:29.897909+00:00",
+      "end": "2026-09-27T06:26:31.555365+00:00"
+    },
+    {
+      "node": "gamma",
+      "start": "2026-09-27T06:23:29.901088+00:00",
+      "end": "2026-09-27T06:29:55.253731+00:00"
+    }
+  ],
+  "nodes": {
+    "alpha": {
+      "status": "trained",
+      "samples": 13096,
+      "features": 31
+    },
+    "beta": {
+      "status": "trained",
+      "samples": 40173,
+      "features": 31
+    },
+    "gamma": {
+      "status": "trained",
+      "samples": 41054,
+      "features": 30
+    }
+  }
+}

@@ -1,0 +1,26 @@
+[
+  {
+    "experiment_id": "exp_alpha_cpu_1789325932",
+    "node_id": "alpha",
+    "type": "cpu",
+    "start_time_utc": "2026-09-13T18:58:52.456638+00:00",
+    "end_time_utc": "2026-09-13T19:03:52.456638+00:00",
+    "description": "Synthetic cpu stress test"
+  },
+  {
+    "experiment_id": "exp_beta_disk_1789327132",
+    "node_id": "beta",
+    "type": "disk",
+    "start_time_utc": "2026-09-13T19:18:52.456638+00:00",
+    "end_time_utc": "2026-09-13T19:23:52.456638+00:00",
+    "description": "Synthetic disk stress test"
+  },
+  {
+    "experiment_id": "exp_gamma_net_1789328332",
+    "node_id": "gamma",
+    "type": "net",
+    "start_time_utc": "2026-09-13T19:38:52.456638+00:00",
+    "end_time_utc": "2026-09-13T19:43:52.456638+00:00",
+    "description": "Synthetic net stress test"
+  }
+]
