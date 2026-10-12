@@ -44,6 +44,8 @@ class NodeOverview(BaseModel):
     last_seen: Optional[datetime]
     online: bool
     capabilities: NodeCapabilities
+    latest_score: Optional[float] = None
+    latest_is_anomalous: Optional[bool] = None
 
 class MetricRecord(BaseModel):
     id: int
@@ -69,6 +71,19 @@ class MetricRecord(BaseModel):
     
     gpu_util_pct: Optional[float] = None
     gpu_vram_pct: Optional[float] = None
+
+    score: Optional[float] = None
+    is_anomalous: Optional[bool] = None
+
+    model_config = ConfigDict(from_attributes=True)
+
+class AnomalyScoreRecord(BaseModel):
+    id: int
+    node_id: str
+    ts: datetime
+    score: Optional[float] = None
+    is_anomalous: Optional[bool] = None
+    model_version: str
 
     model_config = ConfigDict(from_attributes=True)
 

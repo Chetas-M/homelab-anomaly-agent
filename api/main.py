@@ -127,13 +127,20 @@ def get_nodes(db: Session = Depends(get_db)):
                 has_load=row.load_count > 0,
                 has_temp=row.temp_count > 0
             )
+
+            score_stmt = select(models.AnomalyScore).where(models.AnomalyScore.node_id == row.node_id).order_by(desc(models.AnomalyScore.ts)).limit(1)
+            score_row = db.execute(score_stmt).scalar_one_or_none()
+            latest_score = score_row.score if score_row else None
+            latest_is_anomalous = score_row.is_anomalous if score_row else None
             
             nodes.append(schemas.NodeOverview(
                 node_id=row.node_id,
                 first_seen=first_seen,
                 last_seen=last_seen,
                 online=is_online,
-                capabilities=capabilities
+                capabilities=capabilities,
+                latest_score=latest_score,
+                latest_is_anomalous=latest_is_anomalous
             ))
         return nodes
     except SQLAlchemyError as e:
@@ -172,13 +179,23 @@ def get_node(node_id: str, db: Session = Depends(get_db)):
             has_load=row.load_count > 0,
             has_temp=row.temp_count > 0
         )
+
+        score_stmt = select(models.AnomalyScore).where(models.AnomalyScore.node_id == node_id).order_by(desc(models.AnomalyScore.ts)).limit(1)
+        score_row = db.execute(score_stmt).scalar_one_or_none()
+        latest_score = score_row.score if score_row else None
+        latest_is_anomalous = score_row.is_anomalous if score_row else None
+
         return schemas.NodeOverview(
             node_id=node_id,
             first_seen=first_seen,
             last_seen=last_seen,
             online=is_online,
-            capabilities=capabilities
+            capabilities=capabilities,
+            latest_score=latest_score,
+            latest_is_anomalous=latest_is_anomalous
         )
+    except HTTPException:
+        raise
     except SQLAlchemyError as e:
         logger.error(f"Database error in /api/nodes/{node_id}: {e}")
         raise HTTPException(status_code=500, detail="Database error")
@@ -186,11 +203,26 @@ def get_node(node_id: str, db: Session = Depends(get_db)):
 @app.get("/api/nodes/{node_id}/latest", response_model=schemas.MetricRecord)
 def get_node_latest(node_id: str, db: Session = Depends(get_db)):
     try:
-        stmt = select(models.NodeMetric).where(models.NodeMetric.node_id == node_id).order_by(desc(models.NodeMetric.ts)).limit(1)
-        result = db.execute(stmt).scalar_one_or_none()
+        stmt = (
+            select(models.NodeMetric, models.AnomalyScore.score, models.AnomalyScore.is_anomalous)
+            .outerjoin(
+                models.AnomalyScore,
+                (models.NodeMetric.node_id == models.AnomalyScore.node_id) & (models.NodeMetric.ts == models.AnomalyScore.ts)
+            )
+            .where(models.NodeMetric.node_id == node_id)
+            .order_by(desc(models.NodeMetric.ts))
+            .limit(1)
+        )
+        result = db.execute(stmt).first()
         if result is None:
             raise HTTPException(status_code=404, detail="Node not found")
-        return result
+        metric, score, is_anomalous = result
+        record = schemas.MetricRecord.model_validate(metric)
+        record.score = score
+        record.is_anomalous = is_anomalous
+        return record
+    except HTTPException:
+        raise
     except SQLAlchemyError as e:
         logger.error(f"Database error: {e}")
         raise HTTPException(status_code=500, detail="Database error")
@@ -208,22 +240,67 @@ def get_node_metrics(
         if node_exists is None:
             raise HTTPException(status_code=404, detail="Node not found")
             
-        stmt = select(models.NodeMetric).where(models.NodeMetric.node_id == node_id)
-        if start:
-            stmt = stmt.where(models.NodeMetric.ts >= start)
-        if end:
-            stmt = stmt.where(models.NodeMetric.ts <= end)
-            
         if not start and not end:
-            from sqlalchemy.orm import aliased
-            subq = select(models.NodeMetric).where(models.NodeMetric.node_id == node_id).order_by(desc(models.NodeMetric.ts)).limit(limit).subquery()
-            Alias = aliased(models.NodeMetric, subq)
-            stmt = select(Alias).order_by(asc(Alias.ts))
+            subq = (
+                select(models.NodeMetric.id)
+                .where(models.NodeMetric.node_id == node_id)
+                .order_by(desc(models.NodeMetric.ts))
+                .limit(limit)
+                .subquery()
+            )
+            stmt = (
+                select(models.NodeMetric, models.AnomalyScore.score, models.AnomalyScore.is_anomalous)
+                .outerjoin(
+                    models.AnomalyScore,
+                    (models.NodeMetric.node_id == models.AnomalyScore.node_id) & (models.NodeMetric.ts == models.AnomalyScore.ts)
+                )
+                .where(models.NodeMetric.id.in_(select(subq.c.id)))
+                .order_by(asc(models.NodeMetric.ts))
+            )
         else:
+            stmt = (
+                select(models.NodeMetric, models.AnomalyScore.score, models.AnomalyScore.is_anomalous)
+                .outerjoin(
+                    models.AnomalyScore,
+                    (models.NodeMetric.node_id == models.AnomalyScore.node_id) & (models.NodeMetric.ts == models.AnomalyScore.ts)
+                )
+                .where(models.NodeMetric.node_id == node_id)
+            )
+            if start:
+                stmt = stmt.where(models.NodeMetric.ts >= start)
+            if end:
+                stmt = stmt.where(models.NodeMetric.ts <= end)
             stmt = stmt.order_by(asc(models.NodeMetric.ts)).limit(limit)
             
-        results = db.execute(stmt).scalars().all()
-        return list(results)
+        rows = db.execute(stmt).all()
+        records = []
+        for metric, score, is_anomalous in rows:
+            rec = schemas.MetricRecord.model_validate(metric)
+            rec.score = score
+            rec.is_anomalous = is_anomalous
+            records.append(rec)
+        return records
+    except HTTPException:
+        raise
+    except SQLAlchemyError as e:
+        logger.error(f"Database error: {e}")
+        raise HTTPException(status_code=500, detail="Database error")
+
+@app.get("/api/nodes/{node_id}/scores", response_model=list[schemas.AnomalyScoreRecord])
+def get_node_scores(
+    node_id: str,
+    limit: int = Query(default=100, le=1000),
+    db: Session = Depends(get_db)
+):
+    try:
+        stmt = (
+            select(models.AnomalyScore)
+            .where(models.AnomalyScore.node_id == node_id)
+            .order_by(desc(models.AnomalyScore.ts))
+            .limit(limit)
+        )
+        scores = db.execute(stmt).scalars().all()
+        return list(scores)
     except SQLAlchemyError as e:
         logger.error(f"Database error: {e}")
         raise HTTPException(status_code=500, detail="Database error")

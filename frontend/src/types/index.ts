@@ -10,6 +10,8 @@ export interface NodeOverview {
   last_seen: string | null;
   online: boolean;
   capabilities: NodeCapabilities;
+  latest_score?: number | null;
+  latest_is_anomalous?: boolean | null;
 }
 
 export interface MetricRecord {
@@ -36,6 +38,18 @@ export interface MetricRecord {
   
   gpu_util_pct: number | null;
   gpu_vram_pct: number | null;
+
+  score: number | null;
+  is_anomalous: boolean | null;
+}
+
+export interface AnomalyScoreRecord {
+  id: number;
+  node_id: string;
+  ts: string;
+  score: number | null;
+  is_anomalous: boolean | null;
+  model_version: string;
 }
 
 export interface MetricQuality {

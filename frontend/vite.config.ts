@@ -4,4 +4,16 @@ import { defineConfig } from 'vite'
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react()],
+  server: {
+    proxy: {
+      '/api': {
+        target: 'http://100.126.2.116:8002',
+        changeOrigin: true,
+      },
+      '/health': {
+        target: 'http://100.126.2.116:8002',
+        changeOrigin: true,
+      },
+    },
+  },
 })

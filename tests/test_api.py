@@ -203,3 +203,78 @@ def test_cors():
     )
     assert response.status_code == 200
     assert response.headers.get("access-control-allow-origin") == "http://localhost:5173"
+
+def test_anomaly_scores_in_api():
+    from api.models import AnomalyScore
+    now = datetime.now(timezone.utc)
+    ts1 = now
+    ts2 = now + timedelta(seconds=30)
+    
+    # Ingest 2 telemetry points
+    client.post("/ingest", json={"node_id": "anom-node", "ts": ts1.isoformat(), "cpu_pct": 10.0})
+    client.post("/ingest", json={"node_id": "anom-node", "ts": ts2.isoformat(), "cpu_pct": 95.0})
+    
+    # Add an anomaly score for ts2 via DB session
+    with TestingSessionLocal() as session:
+        session.add(AnomalyScore(
+            node_id="anom-node",
+            ts=ts2,
+            score=0.42,
+            is_anomalous=True,
+            model_version="1.0"
+        ))
+        session.commit()
+        
+    # Check /api/nodes
+    res_nodes = client.get("/api/nodes")
+    assert res_nodes.status_code == 200
+    n = next(x for x in res_nodes.json() if x["node_id"] == "anom-node")
+    assert n["latest_score"] == 0.42
+    assert n["latest_is_anomalous"] is True
+    
+    # Check /api/nodes/anom-node
+    res_node = client.get("/api/nodes/anom-node")
+    assert res_node.status_code == 200
+    assert res_node.json()["latest_score"] == 0.42
+    assert res_node.json()["latest_is_anomalous"] is True
+    
+    # Check /api/nodes/anom-node/latest
+    res_latest = client.get("/api/nodes/anom-node/latest")
+    assert res_latest.status_code == 200
+    assert res_latest.json()["score"] == 0.42
+    assert res_latest.json()["is_anomalous"] is True
+    
+    # Check /api/nodes/anom-node/metrics
+    res_metrics = client.get("/api/nodes/anom-node/metrics")
+    assert res_metrics.status_code == 200
+    metrics = res_metrics.json()
+    assert len(metrics) == 2
+    # ts1 has no score (None)
+    assert metrics[0]["score"] is None
+    assert metrics[0]["is_anomalous"] is None
+    # ts2 has score and is_anomalous
+    assert metrics[1]["score"] == 0.42
+    assert metrics[1]["is_anomalous"] is True
+
+def test_get_node_scores():
+    from api.models import AnomalyScore
+    now = datetime.now(timezone.utc)
+    with TestingSessionLocal() as session:
+        session.add(AnomalyScore(
+            node_id="score-node",
+            ts=now,
+            score=-0.15,
+            is_anomalous=False,
+            model_version="1.0"
+        ))
+        session.commit()
+        
+    res = client.get("/api/nodes/score-node/scores")
+    assert res.status_code == 200
+    scores = res.json()
+    assert len(scores) == 1
+    assert scores[0]["node_id"] == "score-node"
+    assert scores[0]["score"] == -0.15
+    assert scores[0]["is_anomalous"] is False
+    assert scores[0]["model_version"] == "1.0"
+

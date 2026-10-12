@@ -1,5 +1,5 @@
 import axios from 'axios';
-import type { NodeOverview, MetricRecord, DataQuality } from '../types';
+import type { NodeOverview, MetricRecord, DataQuality, AnomalyScoreRecord } from '../types';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8002';
 
@@ -22,12 +22,20 @@ export const getLatestMetrics = async (nodeId: string): Promise<MetricRecord> =>
   return data;
 };
 
-export const getMetricsHistory = async (nodeId: string, start?: string, end?: string): Promise<MetricRecord[]> => {
-  const params: Record<string, string> = {};
+export const getMetricsHistory = async (nodeId: string, start?: string, end?: string, limit?: number): Promise<MetricRecord[]> => {
+  const params: Record<string, string | number> = {};
   if (start) params.start = start;
   if (end) params.end = end;
+  if (limit) params.limit = limit;
   
   const { data } = await api.get<MetricRecord[]>(`/api/nodes/${nodeId}/metrics`, { params });
+  return data;
+};
+
+export const getNodeScores = async (nodeId: string, limit: number = 100): Promise<AnomalyScoreRecord[]> => {
+  const { data } = await api.get<AnomalyScoreRecord[]>(`/api/nodes/${nodeId}/scores`, {
+    params: { limit }
+  });
   return data;
 };
 
