@@ -138,6 +138,33 @@ class SimulationStatusResponse(BaseModel):
     expires_at: Optional[datetime] = None
     available_scenarios: list[SimulationScenario]
     total_simulated_samples: int
+    model_status: str = "SIMULATED SIGNAL — MODEL NOT EVALUATED"
+
+class SimulationMetricRecord(BaseModel):
+    ts: datetime
+    node_id: str
+    cpu_pct: Optional[float] = None
+    mem_pct: Optional[float] = None
+    swap_pct: Optional[float] = None
+    disk_read_bps: Optional[float] = None
+    disk_write_bps: Optional[float] = None
+    disk_used_pct: Optional[float] = None
+    net_in_bps: Optional[float] = None
+    net_out_bps: Optional[float] = None
+    load1: Optional[float] = None
+    load5: Optional[float] = None
+    load15: Optional[float] = None
+    temp_c: Optional[float] = None
+    gpu_util_pct: Optional[float] = None
+    gpu_vram_pct: Optional[float] = None
+    is_simulated: bool = True
+    model_evaluated: bool = False
+    model_status: str = "SIMULATED SIGNAL — MODEL NOT EVALUATED"
+    score: Optional[float] = None
+    is_anomalous: Optional[bool] = None
+    deviation_detected: bool = False
+    max_deviation_z: Optional[float] = None
+    attributions: list[MetricAttributionRecord] = []
 
 class SimulationStartRequest(BaseModel):
     scenario: str

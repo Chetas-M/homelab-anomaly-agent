@@ -21,12 +21,14 @@ export function usePolling<T>(
     dataRef.current = data;
   }, [data]);
 
+  const isFetchingRef = useRef(false);
   const mountedRef = useRef(false);
   const timerRef = useRef<number | null>(null);
 
   const execute = useCallback(async () => {
-    if (!mountedRef.current) return;
+    if (!mountedRef.current || isFetchingRef.current) return;
     
+    isFetchingRef.current = true;
     try {
       // Don't set loading true for background polls to avoid UI flicker
       if (dataRef.current === null) {
@@ -40,8 +42,10 @@ export function usePolling<T>(
     } catch (err: any) {
       if (mountedRef.current) {
         setError(err);
+        // Note: Retain previous valid data on temporary fetch errors
       }
     } finally {
+      isFetchingRef.current = false;
       if (mountedRef.current) {
         setLoading(false);
       }

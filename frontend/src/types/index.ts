@@ -106,6 +106,7 @@ export interface SimulationStatusResponse {
   expires_at: string | null;
   available_scenarios: SimulationScenario[];
   total_simulated_samples: number;
+  model_status?: string;
 }
 
 export interface SimulationMetricRecord {
@@ -128,5 +129,9 @@ export interface SimulationMetricRecord {
   score: number | null;
   is_anomalous: boolean | null;
   is_simulated: boolean;
+  model_evaluated?: boolean;
+  model_status?: string;
+  deviation_detected?: boolean;
+  max_deviation_z?: number | null;
   attributions?: MetricAttributionRecord[];
 }

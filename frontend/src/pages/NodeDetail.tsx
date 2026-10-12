@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import ReactECharts from 'echarts-for-react';
 import { subHours, formatISO } from 'date-fns';
@@ -183,18 +183,23 @@ export default function NodeDetail() {
     true
   );
 
-  // Poll attributions
+  // Poll attributions with in-flight guard
+  const isFetchingAttrRef = useRef(false);
   useEffect(() => {
     let active = true;
     const fetchAttr = async () => {
-      if (!nodeId) return;
+      if (!nodeId || isFetchingAttrRef.current) return;
+      isFetchingAttrRef.current = true;
       try {
         const resp: NodeAttributionResponse = await getNodeAttributions(nodeId);
         if (active && resp?.attributions) {
           setAttributions(resp.attributions);
+          setLastRefreshed(new Date());
         }
       } catch (e) {
         console.error('Failed to load metric attributions', e);
+      } finally {
+        isFetchingAttrRef.current = false;
       }
     };
     fetchAttr();
@@ -215,6 +220,25 @@ export default function NodeDetail() {
   }, [nodeId, timeRange, node]);
 
   const { data: history, loading: historyLoading, error: historyError, refetch: refetchHistory } = useApi(fetchHistory, [fetchHistory]);
+
+  // Periodic chart history update for online nodes without page reload
+  useEffect(() => {
+    let active = true;
+    const pollHistory = async () => {
+      if (!nodeId || !node?.online) return;
+      try {
+        await refetchHistory();
+        if (active) setLastRefreshed(new Date());
+      } catch (e) {
+        console.error('Failed to refresh chart history', e);
+      }
+    };
+    const interval = setInterval(pollHistory, 30000);
+    return () => {
+      active = false;
+      clearInterval(interval);
+    };
+  }, [nodeId, node?.online, refetchHistory]);
 
   const handleManualRefresh = async () => {
     await Promise.all([refetchLatest(), refetchHistory()]);

@@ -161,6 +161,15 @@ def load_node_baseline(node_id: str) -> Optional[dict]:
         logger.warning(f"Failed to read baseline for {node_id}: {e}")
         return None
 
+NODE_HARDWARE_CAPABILITIES = {
+    "alpha": {"has_gpu": True, "has_load": False, "has_temp": False},
+    "alpha-win": {"has_gpu": True, "has_load": False, "has_temp": False},
+    "beta": {"has_gpu": False, "has_load": True, "has_temp": True},
+    "beta-srv": {"has_gpu": False, "has_load": True, "has_temp": True},
+    "gamma": {"has_gpu": False, "has_load": True, "has_temp": True},
+    "gamma-srv": {"has_gpu": False, "has_load": True, "has_temp": True},
+}
+
 def compute_metric_attributions(
     node_id: str,
     latest_metrics: Dict[str, Any],
@@ -174,7 +183,7 @@ def compute_metric_attributions(
     - ELEVATED: Significantly above baseline (z > 3.0).
     - LOW: Significantly below baseline (z < -3.0).
     - INSUFFICIENT DATA: Metric is supported on this hardware but latest telemetry is null.
-    - UNAVAILABLE: Metric is structurally unavailable on this hardware (e.g., GPU on non-GPU nodes).
+    - UNAVAILABLE: Metric is structurally unavailable on this hardware (e.g., GPU on non-GPU nodes, Linux load on Windows).
     """
     baseline_cfg = load_node_baseline(node_id)
     medians = baseline_cfg.get("medians", {}) if baseline_cfg else {}
@@ -193,13 +202,21 @@ def compute_metric_attributions(
         is_supported = True
         if supported_metrics is not None:
             is_supported = key in supported_metrics
-        elif features_ordered:
-            # If not in features_ordered and never reported, hardware doesn't have it
-            is_supported = key in features_ordered
         else:
-            # Fallback heuristic
-            if "gpu" in key and node_id.lower() not in ("alpha", "alpha-win"):
-                is_supported = False
+            norm_id = node_id.lower()
+            hw_caps = NODE_HARDWARE_CAPABILITIES.get(norm_id)
+            if hw_caps is not None:
+                if key in ("gpu_util_pct", "gpu_vram_pct"):
+                    is_supported = hw_caps.get("has_gpu", False)
+                elif key in ("load1", "load5", "load15"):
+                    is_supported = hw_caps.get("has_load", False)
+                elif key == "temp_c":
+                    is_supported = hw_caps.get("has_temp", False)
+            elif features_ordered:
+                is_supported = key in features_ordered
+            else:
+                if "gpu" in key and norm_id not in ("alpha", "alpha-win"):
+                    is_supported = False
 
         current_val = latest_metrics.get(key)
         if current_val is not None:

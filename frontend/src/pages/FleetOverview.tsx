@@ -393,7 +393,7 @@ export default function FleetOverview() {
         </div>
 
         <div className="text-xs text-muted mb-3">
-          Opt-in simulation exercises the real feature extraction and frozen Isolation Forest model path on an isolated in-memory simulated stream. Real database telemetry for Alpha, Beta, and Gamma remains 100% unmutated.
+          Controlled demo simulation exercises the per-metric baseline attribution layer and real-time dashboard updates on an isolated in-memory stream. The frozen Isolation Forest model is not evaluated on simulated streams. Real database telemetry for Alpha, Beta, and Gamma remains 100% unmutated.
         </div>
 
         {simStatus?.is_active && latestSimSample && (
@@ -407,14 +407,20 @@ export default function FleetOverview() {
                 Active Scenario: {simStatus.scenario_name} (Node: simulated-node)
               </span>
               <div className="flex items-center gap-3">
-                <span className="text-xs">
-                  Model Decision:{' '}
-                  <strong style={{ color: latestSimSample.is_anomalous ? 'var(--color-error)' : 'var(--color-success)' }}>
-                    {latestSimSample.is_anomalous ? 'ANOMALOUS' : 'NORMAL'}
-                  </strong>
+                <span className="text-xs" style={{ 
+                  backgroundColor: 'rgba(234, 179, 8, 0.15)', 
+                  color: '#eab308', 
+                  padding: '2px 8px', 
+                  borderRadius: '4px', 
+                  fontWeight: 600 
+                }}>
+                  SIMULATED SIGNAL — MODEL NOT EVALUATED
                 </span>
-                <span className="mono text-xs text-muted">
-                  Score: <strong style={{ color: 'var(--text-primary)' }}>{latestSimSample.score?.toFixed(4) ?? 'N/A'}</strong>
+                <span className="text-xs">
+                  Attribution:{' '}
+                  <strong style={{ color: latestSimSample.deviation_detected ? 'var(--color-error)' : 'var(--color-success)' }}>
+                    {latestSimSample.deviation_detected ? 'DEVIATED' : 'NORMAL'}
+                  </strong>
                 </span>
               </div>
             </div>

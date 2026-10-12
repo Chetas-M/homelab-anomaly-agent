@@ -151,9 +151,13 @@ class SimulationManager:
                 "temp_c": medians.get("temp_c", 27.8),
                 "gpu_util_pct": None,
                 "gpu_vram_pct": None,
-                "score": -0.245,
-                "is_anomalous": False,
+                "score": None,
+                "is_anomalous": None,
                 "is_simulated": True,
+                "model_evaluated": False,
+                "model_status": "SIMULATED SIGNAL — MODEL NOT EVALUATED",
+                "deviation_detected": False,
+                "max_deviation_z": 0.0,
             }
             sample["attributions"] = compute_metric_attributions("beta", sample)
             self.history.append(sample)
@@ -186,7 +190,11 @@ class SimulationManager:
             "temp_c": perturbations.get("temp_c", medians.get("temp_c", 27.8)),
             "gpu_util_pct": None,
             "gpu_vram_pct": None,
-            "is_simulated": True
+            "is_simulated": True,
+            "model_evaluated": False,
+            "model_status": "SIMULATED SIGNAL — MODEL NOT EVALUATED",
+            "score": None,
+            "is_anomalous": None
         }
 
         # Add small natural noise
@@ -194,57 +202,18 @@ class SimulationManager:
         if new_point["net_in_bps"]:
             new_point["net_in_bps"] = round(max(0.0, new_point["net_in_bps"] + random.uniform(-500, 500)), 1)
 
-        # Compute metric attributions
+        # Compute metric attributions (empirical baseline Z-scores)
         attributions = compute_metric_attributions("beta", new_point)
         new_point["attributions"] = attributions
 
-        # Score computation:
-        # Check if ML libraries are present
-        score_val = None
-        is_anom_val = None
-        if self._model is not None:
-            try:
-                import pandas as pd
-                hist_records = [{k: v for k, v in p.items() if k != "attributions"} for p in self.history[-15:]]
-                hist_records.append(new_point)
-                df = pd.DataFrame(hist_records)
-                df['ts'] = pd.to_datetime(df['ts'], utc=True)
-                
-                from analysis.features import extract_features
-                feats_df = extract_features(df, "simulated-node")
-                expected_features = self._feature_config["features_ordered"]
-                if 'net_out_bps' in feats_df.columns and 'net_in_bps' in feats_df.columns:
-                    feats_df['beta_net_diff'] = feats_df['net_out_bps'] - feats_df['net_in_bps']
-                for f in expected_features:
-                    if f not in feats_df.columns:
-                        feats_df[f] = float('nan')
-                X = feats_df[expected_features].copy()
-                for f in expected_features:
-                    X[f] = X[f].fillna(medians.get(f, 0))
-                X = X[expected_features]
-                scores = -self._model.decision_function(X)
-                preds = self._model.predict(X)
-                score_val = float(scores[-1])
-                is_anom_val = bool(preds[-1] == -1)
-            except Exception as e:
-                logger.warning(f"ML evaluation fallback: {e}")
-
-        if score_val is None:
-            # Robust baseline deviation score
-            max_z = 0.0
-            for a in attributions:
-                z = a.get("deviation_z")
-                if z is not None and abs(z) > max_z:
-                    max_z = abs(z)
-            if max_z > 3.0:
-                score_val = round(min(0.25, 0.04 * (max_z - 3.0) + 0.08), 4)
-                is_anom_val = True
-            else:
-                score_val = round(max(-0.28, -0.25 + 0.02 * max_z), 4)
-                is_anom_val = False
-
-        new_point["score"] = score_val
-        new_point["is_anomalous"] = is_anom_val
+        # Track deviation against robust reference distribution
+        max_z = 0.0
+        for a in attributions:
+            z = a.get("deviation_z")
+            if z is not None and abs(z) > max_z:
+                max_z = abs(z)
+        new_point["deviation_detected"] = bool(max_z > 3.0)
+        new_point["max_deviation_z"] = round(float(max_z), 2)
 
         self.history.append(new_point)
         if len(self.history) > 60:
@@ -269,7 +238,8 @@ class SimulationManager:
                 "remaining_seconds": remaining,
                 "expires_at": self.expires_at.isoformat() if self.expires_at else None,
                 "available_scenarios": list(SCENARIOS.values()),
-                "total_simulated_samples": len(self.history)
+                "total_simulated_samples": len(self.history),
+                "model_status": "SIMULATED SIGNAL — MODEL NOT EVALUATED"
             }
 
     def get_metrics(self) -> List[Dict[str, Any]]:

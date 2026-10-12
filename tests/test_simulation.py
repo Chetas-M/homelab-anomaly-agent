@@ -43,7 +43,7 @@ def test_simulation_lifecycle():
     assert start_data["duration_seconds"] == 60
     assert start_data["remaining_seconds"] > 0
 
-    # 3. Check metrics endpoint returns simulated points with real model evaluation
+    # 3. Check metrics endpoint returns simulated points with honest status labeling
     metrics_resp = client.get("/api/simulation/metrics")
     assert metrics_resp.status_code == 200
     metrics = metrics_resp.json()
@@ -53,9 +53,12 @@ def test_simulation_lifecycle():
     assert latest["node_id"] == "simulated-node"
     assert latest["is_simulated"] is True
     assert latest["cpu_pct"] > 80.0
-    assert latest["score"] is not None
-    # Isolation Forest detects the severe CPU spike as anomalous
-    assert latest["is_anomalous"] is True
+    assert latest["model_evaluated"] is False
+    assert latest["model_status"] == "SIMULATED SIGNAL — MODEL NOT EVALUATED"
+    assert latest["score"] is None
+    assert latest["is_anomalous"] is None
+    assert latest["deviation_detected"] is True
+    assert latest["max_deviation_z"] > 3.0
     assert "attributions" in latest
 
     # 4. Stop simulation
