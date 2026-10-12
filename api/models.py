@@ -35,3 +35,18 @@ class NodeMetric(Base):
     __table_args__ = (
         Index("idx_node_ts", "node_id", "ts"),
     )
+
+class AnomalyScore(Base):
+    __tablename__ = "anomaly_scores"
+
+    id: Mapped[int] = mapped_column(BigInteger().with_variant(Integer, "sqlite"), primary_key=True, autoincrement=True)
+    node_id: Mapped[str] = mapped_column(String, nullable=False)
+    ts: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    score: Mapped[float | None] = mapped_column(Float, nullable=True) # None for warmup
+    is_anomalous: Mapped[bool | None] = mapped_column(nullable=True)
+    model_version: Mapped[str] = mapped_column(String, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
+
+    __table_args__ = (
+        Index("idx_score_node_ts", "node_id", "ts", unique=True),
+    )
