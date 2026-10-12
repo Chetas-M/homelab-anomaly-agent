@@ -31,6 +31,7 @@ def populate_mock_telemetry(engine):
                 node_id="beta",
                 ts=ts,
                 cpu_pct=10.0, mem_pct=20.0, disk_read_bps=0.0, disk_write_bps=1024.0,
+                disk_used_pct=30.0,
                 net_in_bps=512.0, net_out_bps=1024.0, load1=0.1, load5=0.05, load15=0.01,
                 temp_c=40.0
             ))
@@ -75,10 +76,13 @@ def test_process_node_incremental_and_warmup(test_engine):
         scores = session.execute(select(AnomalyScore).where(AnomalyScore.node_id == "beta")).scalars().all()
         assert len(scores) > 0
         
-        # Verify score validity
+        # Verify score and classification validity
         for s in scores:
             if s.score is not None:
                 assert s.score > -10 and s.score < 10 # finite range
+                assert isinstance(s.is_anomalous, bool)
+            else:
+                assert s.is_anomalous is None
                 
     # Run process again - incremental test
     scored2, warmup2, anomalies2 = process_node(test_engine, "beta", model, config, meta)
@@ -119,3 +123,55 @@ def test_alpha_gaps(test_engine):
             actual_ts = actual_ts.replace(tzinfo=timezone.utc)
         assert actual_ts == ts2
         assert scores[1].score is None # warmup
+        assert scores[1].is_anomalous is None # warmup
+
+def test_anomaly_classification_semantics(test_engine):
+    """Test that model.predict(X) == -1 maps to is_anomalous=True and 1 maps to False."""
+    models, configs, metadata = load_models()
+    if "beta" not in models:
+        pytest.skip("Models not trained")
+
+    model = models["beta"]
+    config = configs["beta"]
+    meta = metadata["beta"]
+
+    # Provide 15 normal points so rolling features have valid history
+    base_ts = datetime(2026, 9, 27, 10, 0, tzinfo=timezone.utc)
+    with Session(test_engine) as session:
+        metrics = []
+        for i in range(15):
+            ts = base_ts + pd.Timedelta(minutes=i)
+            metrics.append(NodeMetric(
+                id=100 + i,
+                node_id="beta",
+                ts=ts,
+                cpu_pct=10.0, mem_pct=20.0, disk_read_bps=0.0, disk_write_bps=1024.0,
+                disk_used_pct=30.0,
+                net_in_bps=512.0, net_out_bps=1024.0, load1=0.1, load5=0.05, load15=0.01,
+                temp_c=40.0
+            ))
+        # Add an extreme anomaly point
+        extreme_ts = base_ts + pd.Timedelta(minutes=15)
+        metrics.append(NodeMetric(
+            id=116,
+            node_id="beta",
+            ts=extreme_ts,
+            cpu_pct=100.0, mem_pct=99.0, disk_read_bps=500_000_000.0, disk_write_bps=500_000_000.0,
+            disk_used_pct=99.0,
+            net_in_bps=1_000_000_000.0, net_out_bps=1_000_000_000.0, load1=50.0, load5=40.0, load15=30.0,
+            temp_c=95.0
+        ))
+        session.add_all(metrics)
+        session.commit()
+
+    scored, warmup, anom_count = process_node(test_engine, "beta", model, config, meta)
+    assert scored == 16
+    assert warmup > 0
+    assert anom_count >= 1
+
+    with Session(test_engine) as session:
+        extreme_score = session.execute(
+            select(AnomalyScore).where(AnomalyScore.node_id == "beta", AnomalyScore.ts == extreme_ts)
+        ).scalar_one()
+        assert extreme_score.score is not None
+        assert extreme_score.is_anomalous is True

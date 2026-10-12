@@ -195,6 +195,7 @@ def process_node(engine, node_id, model, config, meta):
         # 5. Score with loaded model
         # Model is frozen, DO NOT call .fit()
         scores = -model.decision_function(X)
+        preds = model.predict(X)
         
         # 6. Persist results
         scores_to_insert = []
@@ -205,21 +206,21 @@ def process_node(engine, node_id, model, config, meta):
             is_w = bool(is_warmup.iloc[i])
             if is_w:
                 score_val = None
+                is_anom_val = None
                 warmup_count += 1
             else:
                 score_val = float(scores[i])
+                is_anom_val = bool(preds[i] == -1)
+                if is_anom_val:
+                    anomalies_detected += 1
                 
             scores_to_insert.append(AnomalyScore(
                 node_id=node_id,
                 ts=row['ts'],
                 score=score_val,
-                is_anomalous=None, # Binary decision threshold not yet defined
+                is_anomalous=is_anom_val,
                 model_version=meta.get("methodology_version", "1.0")
             ))
-            
-            # Simple thresholding logic based on training 99th percentile if it existed
-            # But the instructions say: "If the current system does not have a production threshold yet, distinguish raw anomaly score from binary anomaly decision... do not pretend that an arbitrary threshold is scientifically validated."
-            # So we leave is_anomalous = None
             
         if not scores_to_insert:
             return 0, 0, 0
