@@ -1,0 +1,119 @@
+{
+  "validation_time_utc": "2026-10-12T15:32:30.015647+00:00",
+  "dataset_boundaries": {
+    "total_post_cutoff_samples": 89346,
+    "beta_total_samples": 43963,
+    "beta_train_samples": 32972,
+    "beta_holdout_samples": 10991,
+    "train_start_utc": "2026-09-27T06:00:07.076750+00:00",
+    "train_end_utc": "2026-10-08T19:18:16.197361+00:00",
+    "holdout_start_utc": "2026-10-08T19:18:46.241063+00:00",
+    "holdout_end_utc": "2026-10-12T15:00:31.638265+00:00",
+    "temporal_leakage_detected": false
+  },
+  "known_anomalies_synthetic_test": {
+    "normal": {
+      "description": "Normal production-like baseline (30 samples)",
+      "anomaly_sample_count": 0,
+      "frozen_detection_rate_pct": null,
+      "candidate_detection_rate_pct": null,
+      "frozen_fp_rate_pct": 0.0,
+      "candidate_fp_rate_pct": 0.0,
+      "frozen_latency_samples": null,
+      "candidate_latency_samples": null,
+      "frozen_max_score": -0.15038628576189328,
+      "candidate_max_score": -0.1463087469061612,
+      "candidate_sustained_fired": false,
+      "candidate_sustained_at_sample": null
+    },
+    "brief_cpu": {
+      "description": "Brief CPU/load spike (1 sample at 98% CPU, load 10.5, temp 58C)",
+      "anomaly_sample_count": 1,
+      "frozen_detection_rate_pct": 0.0,
+      "candidate_detection_rate_pct": 0.0,
+      "frozen_fp_rate_pct": 0.0,
+      "candidate_fp_rate_pct": 0.0,
+      "frozen_latency_samples": null,
+      "candidate_latency_samples": null,
+      "frozen_max_score": -0.04828431658227339,
+      "candidate_max_score": -0.02370433052609089,
+      "candidate_sustained_fired": false,
+      "candidate_sustained_at_sample": null
+    },
+    "sustained_cpu": {
+      "description": "Sustained CPU/load/temp stress (5 consecutive samples at 98% CPU, load 9-12, temp 62-66C)",
+      "anomaly_sample_count": 5,
+      "frozen_detection_rate_pct": 0.0,
+      "candidate_detection_rate_pct": 60.0,
+      "frozen_fp_rate_pct": 0.0,
+      "candidate_fp_rate_pct": 0.0,
+      "frozen_latency_samples": null,
+      "candidate_latency_samples": 0,
+      "frozen_max_score": -0.007884764829747315,
+      "candidate_max_score": 0.016425670501378442,
+      "candidate_sustained_fired": true,
+      "candidate_sustained_at_sample": 17
+    },
+    "net_spike": {
+      "description": "Network throughput flood (4 samples at 50 MB/s)",
+      "anomaly_sample_count": 4,
+      "frozen_detection_rate_pct": 100.0,
+      "candidate_detection_rate_pct": 100.0,
+      "frozen_fp_rate_pct": 0.0,
+      "candidate_fp_rate_pct": 0.0,
+      "frozen_latency_samples": 0,
+      "candidate_latency_samples": 0,
+      "frozen_max_score": 0.08816405671673277,
+      "candidate_max_score": 0.10627455743657832,
+      "candidate_sustained_fired": true,
+      "candidate_sustained_at_sample": 17
+    },
+    "disk_spike": {
+      "description": "Disk I/O flood (4 samples at 300 MB/s + storage fill rate + I/O load)",
+      "anomaly_sample_count": 4,
+      "frozen_detection_rate_pct": 100.0,
+      "candidate_detection_rate_pct": 100.0,
+      "frozen_fp_rate_pct": 6.451612903225806,
+      "candidate_fp_rate_pct": 0.0,
+      "frozen_latency_samples": 0,
+      "candidate_latency_samples": 0,
+      "frozen_max_score": 0.06362906652173361,
+      "candidate_max_score": 0.06753152789660488,
+      "candidate_sustained_fired": true,
+      "candidate_sustained_at_sample": 17
+    },
+    "missing_metrics": {
+      "description": "Sensor missingness (5 samples with temp, load15, net_in as NaN)",
+      "anomaly_sample_count": 0,
+      "frozen_detection_rate_pct": null,
+      "candidate_detection_rate_pct": null,
+      "frozen_fp_rate_pct": 0.0,
+      "candidate_fp_rate_pct": 0.0,
+      "frozen_latency_samples": null,
+      "candidate_latency_samples": null,
+      "frozen_max_score": -0.15038628576189328,
+      "candidate_max_score": -0.1463087469061612,
+      "candidate_sustained_fired": false,
+      "candidate_sustained_at_sample": null
+    }
+  },
+  "alert_semantics_verified": true,
+  "shadow_comparison": {
+    "holdout_samples": 10991,
+    "agreement_pct": 99.59057410608679,
+    "confusion_matrix": {
+      "both_normal": 10745,
+      "both_anomalous": 201,
+      "frozen_only": 5,
+      "candidate_only": 40
+    },
+    "score_correlation": 0.9846912595264238,
+    "score_differences": {
+      "mean": 0.001177388406027914,
+      "std": 0.012763105118713487,
+      "min": -0.04697030999630358,
+      "max": 0.0894614903659936
+    }
+  },
+  "recommendation": "CONTINUE_SHADOW_EVALUATION"
+}
