@@ -1,7 +1,6 @@
 import logging
 from datetime import datetime, timezone, timedelta
 from typing import Dict, Any
-import numpy as np
 
 from fastapi import FastAPI, Depends, HTTPException, status
 from sqlalchemy.orm import Session
@@ -467,15 +466,18 @@ def get_node_alert(
 def compute_distribution(scores_list: list[float]) -> schemas.ScoreDistribution:
     if not scores_list:
         return schemas.ScoreDistribution()
-    arr = np.array(scores_list)
-    p = np.percentile(arr, [0, 25, 50, 75, 95, 100])
+    s = sorted(scores_list)
+    n = len(s)
+    def quantile(q: float) -> float:
+        idx = int(round(q * (n - 1)))
+        return float(s[idx])
     return schemas.ScoreDistribution(
-        min=float(p[0]),
-        p25=float(p[1]),
-        median=float(p[2]),
-        p75=float(p[3]),
-        p95=float(p[4]),
-        max=float(p[5]),
+        min=float(s[0]),
+        p25=quantile(0.25),
+        median=quantile(0.50),
+        p75=quantile(0.75),
+        p95=quantile(0.95),
+        max=float(s[-1]),
     )
 
 @app.get("/api/nodes/{node_id}/shadow/summary", response_model=schemas.ShadowComparisonSummary)

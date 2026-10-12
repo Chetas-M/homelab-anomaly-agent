@@ -24,13 +24,14 @@ from scripts.live_inference import (
 @pytest.fixture
 def test_engine():
     engine = create_engine(
-        "sqlite:///:memory:",
+        "sqlite://",
         connect_args={"check_same_thread": False},
         poolclass=StaticPool,
     )
     Base.metadata.create_all(engine)
     yield engine
     Base.metadata.drop_all(engine)
+    engine.dispose()
 
 @pytest.fixture
 def client(test_engine):
@@ -41,10 +42,11 @@ def client(test_engine):
     yield TestClient(app)
     app.dependency_overrides.clear()
 
-def populate_test_telemetry(engine, count=10):
+def populate_test_telemetry(engine, count=10, base_ts=None):
+    if base_ts is None:
+        base_ts = datetime(2026, 10, 1, 12, 0, tzinfo=timezone.utc)
     with Session(engine) as session:
         metrics = []
-        base_ts = datetime(2026, 10, 1, 12, 0, tzinfo=timezone.utc)
         for i in range(count):
             ts = base_ts + timedelta(minutes=i)
             metrics.append(NodeMetric(
@@ -262,7 +264,7 @@ def test_production_alert_isolation(test_engine):
 
 def test_shadow_summary_and_scores_api(client, test_engine):
     """Verify the shadow summary API returns proper distributions, rates, and distinctions."""
-    base_ts = populate_test_telemetry(test_engine, count=10)
+    base_ts = populate_test_telemetry(test_engine, count=10, base_ts=datetime(2026, 10, 11, 12, 0, tzinfo=timezone.utc))
     
     prod_models, prod_configs, prod_metadata = load_models()
     cand_models, cand_configs, cand_metadata = load_candidate_models()
