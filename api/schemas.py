@@ -104,3 +104,41 @@ class DataQuality(BaseModel):
     largest_gap_seconds: float
     gaps_over_60s: int
     metrics_quality: dict[str, MetricQuality]
+
+class MetricAttributionRecord(BaseModel):
+    metric_key: str
+    display_name: str
+    current_val: Optional[float] = None
+    formatted_val: str
+    unit: str
+    baseline_median: Optional[float] = None
+    reference_range: str
+    deviation_z: Optional[float] = None
+    status: str  # NORMAL, ELEVATED, LOW, INSUFFICIENT DATA, UNAVAILABLE
+    explanation: str
+
+class NodeAttributionResponse(BaseModel):
+    node_id: str
+    ts: Optional[datetime] = None
+    attributions: list[MetricAttributionRecord]
+
+class SimulationScenario(BaseModel):
+    id: str
+    name: str
+    description: str
+
+class SimulationStatusResponse(BaseModel):
+    is_active: bool
+    scenario_id: Optional[str] = None
+    scenario_name: Optional[str] = None
+    scenario_description: Optional[str] = None
+    started_at: Optional[datetime] = None
+    duration_seconds: int
+    remaining_seconds: int
+    expires_at: Optional[datetime] = None
+    available_scenarios: list[SimulationScenario]
+    total_simulated_samples: int
+
+class SimulationStartRequest(BaseModel):
+    scenario: str
+    duration_seconds: int = 120

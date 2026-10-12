@@ -1,7 +1,7 @@
 import { format, parseISO } from 'date-fns';
 
-export const formatBytesPerSec = (bytes: number | null): string => {
-  if (bytes === null) return 'N/A';
+export const formatBytesPerSec = (bytes: number | null | undefined): string => {
+  if (bytes === null || bytes === undefined) return 'N/A';
   if (bytes === 0) return '0 B/s';
   const k = 1024;
   const sizes = ['B/s', 'KB/s', 'MB/s', 'GB/s', 'TB/s'];
@@ -9,18 +9,18 @@ export const formatBytesPerSec = (bytes: number | null): string => {
   return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
 };
 
-export const formatPercent = (val: number | null): string => {
-  if (val === null) return 'N/A';
+export const formatPercent = (val: number | null | undefined): string => {
+  if (val === null || val === undefined) return 'N/A';
   return val.toFixed(1) + '%';
 };
 
-export const formatTemp = (val: number | null): string => {
-  if (val === null) return 'N/A';
+export const formatTemp = (val: number | null | undefined): string => {
+  if (val === null || val === undefined) return 'N/A';
   return val.toFixed(1) + '°C';
 };
 
-export const formatNumber = (val: number | null): string => {
-  if (val === null) return 'N/A';
+export const formatNumber = (val: number | null | undefined): string => {
+  if (val === null || val === undefined) return 'N/A';
   return val.toFixed(2);
 };
 

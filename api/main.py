@@ -12,6 +12,8 @@ from fastapi import Query
 
 from . import models, schemas
 from .db import engine, get_db
+from .attribution import compute_metric_attributions
+from .simulation import simulation_manager
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -379,3 +381,56 @@ def get_node_quality(
     except SQLAlchemyError as e:
         logger.error(f"Database error: {e}")
         raise HTTPException(status_code=500, detail="Database error")
+
+@app.get("/api/nodes/{node_id}/attributions", response_model=schemas.NodeAttributionResponse)
+def get_node_attributions(node_id: str, db: Session = Depends(get_db)):
+    try:
+        node_exists = db.execute(select(models.NodeMetric.id).where(models.NodeMetric.node_id == node_id).limit(1)).scalar_one_or_none()
+        if node_exists is None:
+            raise HTTPException(status_code=404, detail="Node not found")
+
+        latest_stmt = (
+            select(models.NodeMetric)
+            .where(models.NodeMetric.node_id == node_id)
+            .order_by(desc(models.NodeMetric.ts))
+            .limit(1)
+        )
+        latest_metric = db.execute(latest_stmt).scalar_one_or_none()
+        if latest_metric is None:
+            return schemas.NodeAttributionResponse(node_id=node_id, ts=None, attributions=[])
+
+        latest_dict = {
+            c.name: getattr(latest_metric, c.name)
+            for c in models.NodeMetric.__table__.columns
+        }
+        
+        attributions = compute_metric_attributions(node_id, latest_dict)
+        return schemas.NodeAttributionResponse(
+            node_id=node_id,
+            ts=latest_metric.ts,
+            attributions=attributions
+        )
+    except HTTPException:
+        raise
+    except SQLAlchemyError as e:
+        logger.error(f"Database error in get_node_attributions: {e}")
+        raise HTTPException(status_code=500, detail="Database error")
+
+@app.get("/api/simulation/status", response_model=schemas.SimulationStatusResponse)
+def get_simulation_status():
+    return simulation_manager.get_status()
+
+@app.post("/api/simulation/start", response_model=schemas.SimulationStatusResponse)
+def start_simulation(req: schemas.SimulationStartRequest):
+    try:
+        return simulation_manager.start(req.scenario, req.duration_seconds)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+@app.post("/api/simulation/stop", response_model=schemas.SimulationStatusResponse)
+def stop_simulation():
+    return simulation_manager.stop()
+
+@app.get("/api/simulation/metrics")
+def get_simulation_metrics():
+    return simulation_manager.get_metrics()

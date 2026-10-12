@@ -67,3 +67,66 @@ export interface DataQuality {
   gaps_over_60s: number;
   metrics_quality: Record<string, MetricQuality>;
 }
+
+export type MetricAttributionStatus = 'NORMAL' | 'ELEVATED' | 'LOW' | 'INSUFFICIENT DATA' | 'UNAVAILABLE';
+
+export interface MetricAttributionRecord {
+  metric_key: string;
+  display_name: string;
+  current_val: number | null;
+  formatted_val: string;
+  unit: string;
+  baseline_median: number | null;
+  reference_range: string;
+  deviation_z: number | null;
+  status: MetricAttributionStatus;
+  explanation: string;
+}
+
+export interface NodeAttributionResponse {
+  node_id: string;
+  ts: string | null;
+  attributions: MetricAttributionRecord[];
+}
+
+export interface SimulationScenario {
+  id: string;
+  name: string;
+  description: string;
+}
+
+export interface SimulationStatusResponse {
+  is_active: boolean;
+  scenario_id: string | null;
+  scenario_name: string | null;
+  scenario_description: string | null;
+  started_at: string | null;
+  duration_seconds: number;
+  remaining_seconds: number;
+  expires_at: string | null;
+  available_scenarios: SimulationScenario[];
+  total_simulated_samples: number;
+}
+
+export interface SimulationMetricRecord {
+  ts: string;
+  node_id: string;
+  cpu_pct: number;
+  mem_pct: number;
+  swap_pct: number;
+  disk_read_bps: number;
+  disk_write_bps: number;
+  disk_used_pct: number;
+  net_in_bps: number;
+  net_out_bps: number;
+  load1: number;
+  load5: number;
+  load15: number;
+  temp_c: number;
+  gpu_util_pct: number | null;
+  gpu_vram_pct: number | null;
+  score: number | null;
+  is_anomalous: boolean | null;
+  is_simulated: boolean;
+  attributions?: MetricAttributionRecord[];
+}

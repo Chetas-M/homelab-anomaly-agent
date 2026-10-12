@@ -45,3 +45,34 @@ export const getDataQuality = async (nodeId: string, windowHours: number = 24): 
   });
   return data;
 };
+
+export const getNodeAttributions = async (nodeId: string): Promise<import('../types').NodeAttributionResponse> => {
+  const { data } = await api.get<import('../types').NodeAttributionResponse>(`/api/nodes/${nodeId}/attributions`);
+  return data;
+};
+
+export const getSimulationStatus = async (): Promise<import('../types').SimulationStatusResponse> => {
+  const { data } = await api.get<import('../types').SimulationStatusResponse>('/api/simulation/status');
+  return data;
+};
+
+export const startSimulation = async (
+  scenario: string,
+  durationSeconds: number = 120
+): Promise<import('../types').SimulationStatusResponse> => {
+  const { data } = await api.post<import('../types').SimulationStatusResponse>('/api/simulation/start', {
+    scenario,
+    duration_seconds: durationSeconds
+  });
+  return data;
+};
+
+export const stopSimulation = async (): Promise<import('../types').SimulationStatusResponse> => {
+  const { data } = await api.post<import('../types').SimulationStatusResponse>('/api/simulation/stop');
+  return data;
+};
+
+export const getSimulationMetrics = async (): Promise<import('../types').SimulationMetricRecord[]> => {
+  const { data } = await api.get<import('../types').SimulationMetricRecord[]>('/api/simulation/metrics');
+  return data;
+};
