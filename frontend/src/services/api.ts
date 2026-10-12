@@ -83,3 +83,16 @@ export const getSimulationMetrics = async (): Promise<import('../types').Simulat
   const { data } = await api.get<import('../types').SimulationMetricRecord[]>('/api/simulation/metrics');
   return data;
 };
+
+export const getNodeShadowSummary = async (nodeId: string): Promise<import('../types').ShadowComparisonSummary> => {
+  const { data } = await api.get<import('../types').ShadowComparisonSummary>(`/api/nodes/${nodeId}/shadow/summary`);
+  return data;
+};
+
+export const getNodeShadowScores = async (nodeId: string, limit: number = 50): Promise<import('../types').ShadowScoreRecord[]> => {
+  const { data } = await api.get<import('../types').ShadowScoreRecord[]>(`/api/nodes/${nodeId}/shadow/scores`, {
+    params: { limit }
+  });
+  return data;
+};
+

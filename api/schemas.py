@@ -184,3 +184,54 @@ class SimulationMetricRecord(BaseModel):
 class SimulationStartRequest(BaseModel):
     scenario: str
     duration_seconds: int = 120
+
+class ScoreDistribution(BaseModel):
+    min: Optional[float] = None
+    p25: Optional[float] = None
+    median: Optional[float] = None
+    p75: Optional[float] = None
+    p95: Optional[float] = None
+    max: Optional[float] = None
+
+class ShadowScoreRecord(BaseModel):
+    id: int
+    node_id: str
+    ts: datetime
+    score: Optional[float] = None
+    is_anomalous: Optional[bool] = None
+    model_version: str
+    artifact_id: str
+    scoring_status: str
+
+    model_config = ConfigDict(from_attributes=True)
+
+class ShadowComparisonSummary(BaseModel):
+    node_id: str
+    candidate_active: bool
+    candidate_artifact_id: Optional[str] = None
+    candidate_version: Optional[str] = None
+    frozen_version: Optional[str] = None
+    earliest_shadow_ts: Optional[datetime] = None
+    latest_shadow_ts: Optional[datetime] = None
+    total_shadow_samples: int = 0
+    total_scored_samples: int = 0
+    total_warmup_samples: int = 0
+    
+    production_anomaly_count: int = 0
+    candidate_anomaly_count: int = 0
+    production_anomaly_rate_pct: float = 0.0
+    candidate_anomaly_rate_pct: float = 0.0
+    
+    concordance_count: int = 0
+    concordance_rate_pct: float = 0.0
+    disagreement_count: int = 0
+    disagreement_rate_pct: float = 0.0
+    
+    candidate_only_anomalies: int = 0
+    frozen_only_anomalies: int = 0
+    both_anomalies: int = 0
+    neither_anomalies: int = 0
+    
+    frozen_score_distribution: ScoreDistribution
+    candidate_score_distribution: ScoreDistribution
+

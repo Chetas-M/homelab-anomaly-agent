@@ -151,3 +151,55 @@ export interface SimulationMetricRecord {
   max_deviation_z?: number | null;
   attributions?: MetricAttributionRecord[];
 }
+
+export interface ScoreDistribution {
+  min: number | null;
+  p25: number | null;
+  median: number | null;
+  p75: number | null;
+  p95: number | null;
+  max: number | null;
+}
+
+export interface ShadowScoreRecord {
+  id: number;
+  node_id: string;
+  ts: string;
+  score: number | null;
+  is_anomalous: boolean | null;
+  model_version: string;
+  artifact_id: string;
+  scoring_status: string;
+}
+
+export interface ShadowComparisonSummary {
+  node_id: string;
+  candidate_active: boolean;
+  candidate_artifact_id: string | null;
+  candidate_version: string | null;
+  frozen_version: string | null;
+  earliest_shadow_ts: string | null;
+  latest_shadow_ts: string | null;
+  total_shadow_samples: number;
+  total_scored_samples: number;
+  total_warmup_samples: number;
+  
+  production_anomaly_count: number;
+  candidate_anomaly_count: number;
+  production_anomaly_rate_pct: number;
+  candidate_anomaly_rate_pct: number;
+  
+  concordance_count: number;
+  concordance_rate_pct: number;
+  disagreement_count: number;
+  disagreement_rate_pct: number;
+  
+  candidate_only_anomalies: number;
+  frozen_only_anomalies: number;
+  both_anomalies: number;
+  neither_anomalies: number;
+  
+  frozen_score_distribution: ScoreDistribution;
+  candidate_score_distribution: ScoreDistribution;
+}
+

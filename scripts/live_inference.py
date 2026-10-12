@@ -14,7 +14,7 @@ from sqlalchemy.exc import IntegrityError, OperationalError
 
 # Add parent to path to import local modules
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-from api.models import Base, NodeMetric, AnomalyScore
+from api.models import Base, NodeMetric, AnomalyScore, ShadowAnomalyScore
 from analysis.features import extract_features
 
 # Configure logging
@@ -27,6 +27,7 @@ logger = logging.getLogger("live_inference")
 
 DATABASE_URL = os.environ.get("DATABASE_URL", "sqlite:///prod_telemetry.db")
 MODEL_DIR = os.environ.get("MODEL_DIR", "models")
+CANDIDATE_MODEL_DIR = os.environ.get("CANDIDATE_MODEL_DIR", os.path.join(MODEL_DIR, "candidates"))
 INFERENCE_POLL_INTERVAL = int(os.environ.get("INFERENCE_POLL_INTERVAL", "30"))
 INFERENCE_BATCH_SIZE = int(os.environ.get("INFERENCE_BATCH_SIZE", "1000"))
 
@@ -46,7 +47,7 @@ def setup_database():
             time.sleep(sleep_time)
 
 def load_models():
-    """Load model artifacts for all nodes."""
+    """Load production model artifacts."""
     models = {}
     configs = {}
     metadata = {}
@@ -85,11 +86,36 @@ def load_models():
             models[node] = iso_forest
             configs[node] = config
             metadata[node] = meta
-            logger.info(f"Successfully loaded model for node {node}.")
+            logger.info(f"Successfully loaded production model for node {node}.")
         except Exception as e:
             logger.error(f"Failed to load model for {node}: {e}")
-            
+
     return models, configs, metadata
+
+def load_candidate_models():
+    """Load isolated shadow candidate models if available."""
+    cand_models = {}
+    cand_configs = {}
+    cand_metadata = {}
+    
+    for node in ["alpha", "beta", "gamma"]:
+        cand_node_dir = os.path.join(CANDIDATE_MODEL_DIR, node)
+        cand_model_path = os.path.join(cand_node_dir, "isolation_forest.joblib")
+        if os.path.exists(cand_model_path):
+            try:
+                c_model = joblib.load(cand_model_path)
+                with open(os.path.join(cand_node_dir, "feature_config.json"), "r") as f:
+                    c_config = json.load(f)
+                with open(os.path.join(cand_node_dir, "metadata.json"), "r") as f:
+                    c_meta = json.load(f)
+                cand_models[node] = c_model
+                cand_configs[node] = c_config
+                cand_metadata[node] = c_meta
+                logger.info(f"Successfully loaded shadow candidate model for node {node} (Artifact: {c_meta.get('artifact_id', 'candidate')}).")
+            except Exception as e:
+                logger.error(f"Failed to load shadow candidate model for {node}: {e}")
+                
+    return cand_models, cand_configs, cand_metadata
 
 def get_watermark(session, node_id):
     """Get the last processed timestamp for a given node."""
@@ -116,7 +142,7 @@ def get_watermark(session, node_id):
         result = result.replace(tzinfo=timezone.utc)
     return result
 
-def process_node(engine, node_id, model, config, meta):
+def process_node(engine, node_id, model, config, meta, cand_model=None, cand_config=None, cand_meta=None):
     """Process new telemetry for a single node."""
     with Session(engine) as session:
         watermark = get_watermark(session, node_id)
@@ -197,7 +223,60 @@ def process_node(engine, node_id, model, config, meta):
         scores = -model.decision_function(X)
         preds = model.predict(X)
         
-        # 6. Persist results
+        # 6. Candidate Shadow Scoring (isolated from production scoring/alerts)
+        shadow_values_to_insert = []
+        if cand_model is not None and cand_config is not None:
+            try:
+                cand_features = cand_config.get("features_ordered", [])
+                for cf in cand_features:
+                    if cf not in feats_df.columns:
+                        feats_df[cf] = np.nan
+                
+                # Identify warmup samples for candidate model
+                cand_temporal = [f for f in cand_features if any(sub in f for sub in ['_roll_', '_roc', '_diff', '_mean', '_std'])]
+                if cand_temporal:
+                    cand_is_warmup = feats_df[cand_temporal].isna().any(axis=1)
+                else:
+                    cand_is_warmup = pd.Series(False, index=feats_df.index)
+                    
+                X_cand = feats_df[cand_features].copy()
+                if cand_config.get("missing_value_policy") == "median_imputation":
+                    c_medians = cand_config.get("medians", {})
+                    for cf in cand_features:
+                        X_cand[cf] = X_cand[cf].fillna(c_medians.get(cf, 0))
+                X_cand = X_cand[cand_features]
+                
+                c_scores = -cand_model.decision_function(X_cand)
+                c_preds = cand_model.predict(X_cand)
+                
+                c_meta = cand_meta or {}
+                cand_ver = cand_config.get("methodology_version") or c_meta.get("methodology_version", "1.0-candidate")
+                cand_art_id = c_meta.get("artifact_id") or f"{node_id}-cand-{c_meta.get('creation_time_utc', 'latest')}"
+                
+                for i, (_, row) in enumerate(feats_df.iterrows()):
+                    is_w = bool(cand_is_warmup.iloc[i])
+                    if is_w:
+                        sc = None
+                        an = None
+                        st = "WARMUP"
+                    else:
+                        sc = float(c_scores[i])
+                        an = bool(c_preds[i] == -1)
+                        st = "SCORED"
+                    
+                    shadow_values_to_insert.append({
+                        "node_id": node_id,
+                        "ts": row['ts'],
+                        "score": sc,
+                        "is_anomalous": an,
+                        "model_version": cand_ver,
+                        "artifact_id": cand_art_id,
+                        "scoring_status": st
+                    })
+            except Exception as e:
+                logger.error(f"Error computing shadow candidate scores for {node_id}: {e}", exc_info=True)
+        
+        # 7. Persist results
         scores_to_insert = []
         anomalies_detected = 0
         warmup_count = 0
@@ -241,8 +320,13 @@ def process_node(engine, node_id, model, config, meta):
             
             stmt = insert(AnomalyScore).values(values_to_insert)
             stmt = stmt.on_conflict_do_nothing(index_elements=['node_id', 'ts'])
-            
             session.execute(stmt)
+            
+            if shadow_values_to_insert:
+                stmt_shadow = insert(ShadowAnomalyScore).values(shadow_values_to_insert)
+                stmt_shadow = stmt_shadow.on_conflict_do_nothing(index_elements=['node_id', 'ts'])
+                session.execute(stmt_shadow)
+                
             session.commit()
             return len(scores_to_insert), warmup_count, anomalies_detected
         except Exception as e:
@@ -255,6 +339,7 @@ def run_inference_loop():
     engine = setup_database()
     
     models, configs, metadata = load_models()
+    cand_models, cand_configs, cand_metadata = load_candidate_models()
     if not models:
         logger.error("No models loaded. Exiting.")
         sys.exit(1)
@@ -283,7 +368,10 @@ def run_inference_loop():
                     node, 
                     model, 
                     configs[node], 
-                    metadata[node]
+                    metadata[node],
+                    cand_model=cand_models.get(node),
+                    cand_config=cand_configs.get(node),
+                    cand_meta=cand_metadata.get(node)
                 )
                 
                 total_scored += scored

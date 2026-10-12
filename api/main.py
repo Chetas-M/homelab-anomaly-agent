@@ -1,6 +1,7 @@
 import logging
 from datetime import datetime, timezone, timedelta
 from typing import Dict, Any
+import numpy as np
 
 from fastapi import FastAPI, Depends, HTTPException, status
 from sqlalchemy.orm import Session
@@ -462,3 +463,177 @@ def get_node_alert(
     except SQLAlchemyError as e:
         logger.error(f"Database error in get_node_alert: {e}")
         raise HTTPException(status_code=500, detail="Database error")
+
+def compute_distribution(scores_list: list[float]) -> schemas.ScoreDistribution:
+    if not scores_list:
+        return schemas.ScoreDistribution()
+    arr = np.array(scores_list)
+    p = np.percentile(arr, [0, 25, 50, 75, 95, 100])
+    return schemas.ScoreDistribution(
+        min=float(p[0]),
+        p25=float(p[1]),
+        median=float(p[2]),
+        p75=float(p[3]),
+        p95=float(p[4]),
+        max=float(p[5]),
+    )
+
+@app.get("/api/nodes/{node_id}/shadow/summary", response_model=schemas.ShadowComparisonSummary)
+def get_node_shadow_summary(node_id: str, db: Session = Depends(get_db)):
+    try:
+        node_exists = db.execute(select(models.NodeMetric.id).where(models.NodeMetric.node_id == node_id).limit(1)).scalar_one_or_none()
+        if node_exists is None:
+            raise HTTPException(status_code=404, detail="Node not found")
+
+        latest_shadow = db.execute(
+            select(models.ShadowAnomalyScore)
+            .where(models.ShadowAnomalyScore.node_id == node_id)
+            .order_by(desc(models.ShadowAnomalyScore.ts))
+            .limit(1)
+        ).scalar_one_or_none()
+
+        if latest_shadow is None:
+            return schemas.ShadowComparisonSummary(
+                node_id=node_id,
+                candidate_active=False,
+                frozen_score_distribution=schemas.ScoreDistribution(),
+                candidate_score_distribution=schemas.ScoreDistribution(),
+            )
+
+        total_shadow = db.execute(
+            select(func.count(models.ShadowAnomalyScore.id))
+            .where(models.ShadowAnomalyScore.node_id == node_id)
+        ).scalar() or 0
+
+        total_warmup = db.execute(
+            select(func.count(models.ShadowAnomalyScore.id))
+            .where(
+                models.ShadowAnomalyScore.node_id == node_id,
+                models.ShadowAnomalyScore.scoring_status == "WARMUP"
+            )
+        ).scalar() or 0
+
+        earliest_shadow_ts = db.execute(
+            select(func.min(models.ShadowAnomalyScore.ts))
+            .where(models.ShadowAnomalyScore.node_id == node_id)
+        ).scalar()
+
+        latest_shadow_ts = latest_shadow.ts
+
+        stmt = (
+            select(models.AnomalyScore, models.ShadowAnomalyScore)
+            .join(
+                models.ShadowAnomalyScore,
+                (models.AnomalyScore.node_id == models.ShadowAnomalyScore.node_id) &
+                (models.AnomalyScore.ts == models.ShadowAnomalyScore.ts)
+            )
+            .where(models.AnomalyScore.node_id == node_id)
+            .order_by(desc(models.AnomalyScore.ts))
+        )
+        pairs = db.execute(stmt).all()
+
+        prod_scores = []
+        cand_scores = []
+        prod_anom_count = 0
+        cand_anom_count = 0
+        concordance_count = 0
+        disagreement_count = 0
+        cand_only = 0
+        frozen_only = 0
+        both_anom = 0
+        neither_anom = 0
+        frozen_version = None
+
+        valid_scored_count = 0
+        for p_score, s_score in pairs:
+            if frozen_version is None and p_score.model_version:
+                frozen_version = p_score.model_version
+
+            if p_score.score is not None and s_score.score is not None:
+                valid_scored_count += 1
+                prod_scores.append(float(p_score.score))
+                cand_scores.append(float(s_score.score))
+
+                p_anom = bool(p_score.is_anomalous)
+                c_anom = bool(s_score.is_anomalous)
+
+                if p_anom:
+                    prod_anom_count += 1
+                if c_anom:
+                    cand_anom_count += 1
+
+                if p_anom == c_anom:
+                    concordance_count += 1
+                else:
+                    disagreement_count += 1
+
+                if c_anom and not p_anom:
+                    cand_only += 1
+                elif p_anom and not c_anom:
+                    frozen_only += 1
+                elif p_anom and c_anom:
+                    both_anom += 1
+                else:
+                    neither_anom += 1
+
+        prod_rate = round((prod_anom_count / valid_scored_count * 100.0), 2) if valid_scored_count > 0 else 0.0
+        cand_rate = round((cand_anom_count / valid_scored_count * 100.0), 2) if valid_scored_count > 0 else 0.0
+        conc_rate = round((concordance_count / valid_scored_count * 100.0), 2) if valid_scored_count > 0 else 0.0
+        disag_rate = round((disagreement_count / valid_scored_count * 100.0), 2) if valid_scored_count > 0 else 0.0
+
+        return schemas.ShadowComparisonSummary(
+            node_id=node_id,
+            candidate_active=True,
+            candidate_artifact_id=latest_shadow.artifact_id,
+            candidate_version=latest_shadow.model_version,
+            frozen_version=frozen_version or "1.0",
+            earliest_shadow_ts=earliest_shadow_ts,
+            latest_shadow_ts=latest_shadow_ts,
+            total_shadow_samples=total_shadow,
+            total_scored_samples=valid_scored_count,
+            total_warmup_samples=total_warmup,
+            production_anomaly_count=prod_anom_count,
+            candidate_anomaly_count=cand_anom_count,
+            production_anomaly_rate_pct=prod_rate,
+            candidate_anomaly_rate_pct=cand_rate,
+            concordance_count=concordance_count,
+            concordance_rate_pct=conc_rate,
+            disagreement_count=disagreement_count,
+            disagreement_rate_pct=disag_rate,
+            candidate_only_anomalies=cand_only,
+            frozen_only_anomalies=frozen_only,
+            both_anomalies=both_anom,
+            neither_anomalies=neither_anom,
+            frozen_score_distribution=compute_distribution(prod_scores),
+            candidate_score_distribution=compute_distribution(cand_scores),
+        )
+    except HTTPException:
+        raise
+    except SQLAlchemyError as e:
+        logger.error(f"Database error in get_node_shadow_summary: {e}")
+        raise HTTPException(status_code=500, detail="Database error")
+
+@app.get("/api/nodes/{node_id}/shadow/scores", response_model=list[schemas.ShadowScoreRecord])
+def get_node_shadow_scores(
+    node_id: str,
+    limit: int = Query(default=50, ge=1, le=500),
+    db: Session = Depends(get_db)
+):
+    try:
+        node_exists = db.execute(select(models.NodeMetric.id).where(models.NodeMetric.node_id == node_id).limit(1)).scalar_one_or_none()
+        if node_exists is None:
+            raise HTTPException(status_code=404, detail="Node not found")
+
+        stmt = (
+            select(models.ShadowAnomalyScore)
+            .where(models.ShadowAnomalyScore.node_id == node_id)
+            .order_by(desc(models.ShadowAnomalyScore.ts))
+            .limit(limit)
+        )
+        return db.execute(stmt).scalars().all()
+    except HTTPException:
+        raise
+    except SQLAlchemyError as e:
+        logger.error(f"Database error in get_node_shadow_scores: {e}")
+        raise HTTPException(status_code=500, detail="Database error")
+

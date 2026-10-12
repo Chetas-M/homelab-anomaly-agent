@@ -2,7 +2,7 @@ import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import ReactECharts from 'echarts-for-react';
 import { subHours, formatISO } from 'date-fns';
-import { getNode, getLatestMetrics, getMetricsHistory, getNodeAttributions } from '../services/api';
+import { getNode, getLatestMetrics, getMetricsHistory, getNodeAttributions, getNodeShadowSummary } from '../services/api';
 import { useApi } from '../hooks/useApi';
 import { usePolling } from '../hooks/usePolling';
 import { getDisplayName } from '../utils/displayNames';
@@ -11,7 +11,7 @@ import { LoadingState, ErrorState, EmptyState } from '../components/States';
 import { MetricCard } from '../components/MetricCard';
 import { SkeletonChart } from '../components/SkeletonChart';
 import { getNodeIdentityColor } from '../utils/theme';
-import type { MetricRecord, NodeAttributionResponse, MetricAttributionRecord } from '../types';
+import type { MetricRecord, NodeAttributionResponse, MetricAttributionRecord, ShadowComparisonSummary } from '../types';
 import { ChevronLeft, ShieldAlert, ShieldCheck, AlertTriangle, Activity, RefreshCw } from 'lucide-react';
 
 interface TimeRangeOption {
@@ -183,6 +183,12 @@ export default function NodeDetail() {
     true
   );
 
+  const { data: shadowSummary, refetch: refetchShadow } = usePolling<ShadowComparisonSummary>(
+    () => getNodeShadowSummary(nodeId!),
+    15000,
+    true
+  );
+
   // Poll attributions with in-flight guard
   const isFetchingAttrRef = useRef(false);
   useEffect(() => {
@@ -241,7 +247,7 @@ export default function NodeDetail() {
   }, [nodeId, node?.online, refetchHistory]);
 
   const handleManualRefresh = async () => {
-    await Promise.all([refetchLatest(), refetchHistory()]);
+    await Promise.all([refetchLatest(), refetchHistory(), refetchShadow()]);
     if (nodeId) {
       const resp = await getNodeAttributions(nodeId);
       if (resp?.attributions) setAttributions(resp.attributions);
@@ -310,6 +316,143 @@ export default function NodeDetail() {
           </Link>
         </div>
       </div>
+
+      {/* Live Shadow Canary Section (Active on Beta) */}
+      {shadowSummary?.candidate_active && (
+        <div className="card mb-8" style={{ border: '1px solid rgba(139, 92, 246, 0.4)', backgroundColor: 'rgba(139, 92, 246, 0.03)' }}>
+          <div className="flex justify-between items-start mb-4">
+            <div>
+              <div className="flex items-center gap-2">
+                <span style={{ 
+                  backgroundColor: 'rgba(139, 92, 246, 0.2)', 
+                  color: '#c4b5fd', 
+                  fontSize: '11px', 
+                  fontWeight: 700, 
+                  padding: '2px 8px', 
+                  borderRadius: '4px',
+                  border: '1px solid rgba(139, 92, 246, 0.4)',
+                  letterSpacing: '0.05em'
+                }}>
+                  LIVE SHADOW CANARY
+                </span>
+                <span className="text-xs text-muted mono">
+                  Read-only evaluation against live incoming telemetry
+                </span>
+              </div>
+              <p className="text-sm text-secondary mt-1">
+                Candidate model is scoring identical live telemetry concurrently with the frozen production model. Candidate output is strictly isolated and does not influence production alerts or classifications.
+              </p>
+            </div>
+            <div className="text-right">
+              <div className="text-xs text-muted">Audited Scored Samples</div>
+              <div className="mono font-semibold" style={{ fontSize: '1.25rem', color: '#c4b5fd' }}>
+                {shadowSummary.total_scored_samples}
+                <span className="text-xs text-muted font-normal ml-1">({shadowSummary.total_warmup_samples} warmup)</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Side-by-side comparison */}
+          <div className="grid grid-cols-2 gap-4 mb-4">
+            {/* Production Model */}
+            <div style={{ backgroundColor: 'rgba(59, 130, 246, 0.05)', border: '1px solid rgba(59, 130, 246, 0.25)', borderRadius: '6px', padding: '12px' }}>
+              <div className="flex justify-between items-center mb-2">
+                <span className="mono text-xs font-semibold" style={{ color: '#60a5fa' }}>
+                  PRODUCTION MODEL (FROZEN)
+                </span>
+                <span className="text-xs text-muted mono">Version: {shadowSummary.frozen_version}</span>
+              </div>
+              <div className="grid grid-cols-2 gap-2 text-sm">
+                <div>
+                  <div className="text-xs text-muted">Anomaly Rate</div>
+                  <div className="mono text-lg font-bold" style={{ color: shadowSummary.production_anomaly_rate_pct > 0 ? 'var(--color-warning)' : 'var(--color-success)' }}>
+                    {shadowSummary.production_anomaly_rate_pct.toFixed(2)}%
+                    <span className="text-xs text-muted font-normal ml-1">({shadowSummary.production_anomaly_count} samples)</span>
+                  </div>
+                </div>
+                <div>
+                  <div className="text-xs text-muted">Score Distribution</div>
+                  <div className="mono text-xs mt-1">
+                    Med: {shadowSummary.frozen_score_distribution.median !== null && shadowSummary.frozen_score_distribution.median !== undefined ? shadowSummary.frozen_score_distribution.median.toFixed(4) : 'N/A'} • P95: {shadowSummary.frozen_score_distribution.p95 !== null && shadowSummary.frozen_score_distribution.p95 !== undefined ? shadowSummary.frozen_score_distribution.p95.toFixed(4) : 'N/A'}
+                  </div>
+                </div>
+              </div>
+              <div className="text-xs text-muted mt-2 border-t border-light pt-1">
+                Authority: <strong>Active Production</strong> (triggers alerts & sustained state)
+              </div>
+            </div>
+
+            {/* Shadow Candidate Model */}
+            <div style={{ backgroundColor: 'rgba(139, 92, 246, 0.06)', border: '1px solid rgba(139, 92, 246, 0.35)', borderRadius: '6px', padding: '12px' }}>
+              <div className="flex justify-between items-center mb-2">
+                <span className="mono text-xs font-semibold" style={{ color: '#c4b5fd' }}>
+                  SHADOW CANDIDATE (ISOLATED)
+                </span>
+                <span className="text-xs text-muted mono">Artifact: {shadowSummary.candidate_artifact_id || 'candidate'}</span>
+              </div>
+              <div className="grid grid-cols-2 gap-2 text-sm">
+                <div>
+                  <div className="text-xs text-muted">Anomaly Rate</div>
+                  <div className="mono text-lg font-bold" style={{ color: shadowSummary.candidate_anomaly_rate_pct > 0 ? '#c4b5fd' : 'var(--color-success)' }}>
+                    {shadowSummary.candidate_anomaly_rate_pct.toFixed(2)}%
+                    <span className="text-xs text-muted font-normal ml-1">({shadowSummary.candidate_anomaly_count} samples)</span>
+                  </div>
+                </div>
+                <div>
+                  <div className="text-xs text-muted">Score Distribution</div>
+                  <div className="mono text-xs mt-1">
+                    Med: {shadowSummary.candidate_score_distribution.median !== null && shadowSummary.candidate_score_distribution.median !== undefined ? shadowSummary.candidate_score_distribution.median.toFixed(4) : 'N/A'} • P95: {shadowSummary.candidate_score_distribution.p95 !== null && shadowSummary.candidate_score_distribution.p95 !== undefined ? shadowSummary.candidate_score_distribution.p95.toFixed(4) : 'N/A'}
+                  </div>
+                </div>
+              </div>
+              <div className="text-xs text-muted mt-2 border-t border-light pt-1">
+                Authority: <strong>Read-Only Shadow</strong> (zero alert authority, audit only)
+              </div>
+            </div>
+          </div>
+
+          {/* Concordance and Disagreements Grid */}
+          <div className="grid grid-cols-4 gap-3 text-sm">
+            <div className="card" style={{ padding: '8px 12px', margin: 0, backgroundColor: 'var(--bg-secondary)' }}>
+              <div className="text-xs text-muted">Model Concordance</div>
+              <div className="mono font-bold text-base" style={{ color: 'var(--color-success)' }}>
+                {shadowSummary.concordance_rate_pct.toFixed(1)}%
+              </div>
+              <div className="text-xs text-muted">{shadowSummary.concordance_count} matching decisions</div>
+            </div>
+
+            <div className="card" style={{ padding: '8px 12px', margin: 0, backgroundColor: 'var(--bg-secondary)' }}>
+              <div className="text-xs text-muted">Disagreements</div>
+              <div className="mono font-bold text-base" style={{ color: shadowSummary.disagreement_count > 0 ? 'var(--color-warning)' : 'var(--text-muted)' }}>
+                {shadowSummary.disagreement_rate_pct.toFixed(1)}%
+              </div>
+              <div className="text-xs text-muted">{shadowSummary.disagreement_count} split decisions</div>
+            </div>
+
+            <div className="card" style={{ padding: '8px 12px', margin: 0, backgroundColor: 'var(--bg-secondary)' }}>
+              <div className="text-xs text-muted">Candidate-Only Anomalies</div>
+              <div className="mono font-bold text-base" style={{ color: shadowSummary.candidate_only_anomalies > 0 ? '#c4b5fd' : 'var(--text-muted)' }}>
+                {shadowSummary.candidate_only_anomalies}
+              </div>
+              <div className="text-xs text-muted">Flagged by Candidate only</div>
+            </div>
+
+            <div className="card" style={{ padding: '8px 12px', margin: 0, backgroundColor: 'var(--bg-secondary)' }}>
+              <div className="text-xs text-muted">Frozen-Only Anomalies</div>
+              <div className="mono font-bold text-base" style={{ color: shadowSummary.frozen_only_anomalies > 0 ? 'var(--color-warning)' : 'var(--text-muted)' }}>
+                {shadowSummary.frozen_only_anomalies}
+              </div>
+              <div className="text-xs text-muted">Flagged by Frozen only</div>
+            </div>
+          </div>
+
+          <div className="flex justify-between items-center text-xs text-muted mt-3 pt-2 border-t border-light mono">
+            <span>Canary Started: {formatDateTime(shadowSummary.earliest_shadow_ts)}</span>
+            <span>Latest Audited Sample: {formatDateTime(shadowSummary.latest_shadow_ts)}</span>
+            <span style={{ color: '#22c55e' }}>Idempotency Guard: Active (node_id, ts)</span>
+          </div>
+        </div>
+      )}
 
       {/* Model Anomaly Status & Latest Telemetry */}
       <h3 className="mb-4 text-muted">Model Inference & Latest Telemetry</h3>
