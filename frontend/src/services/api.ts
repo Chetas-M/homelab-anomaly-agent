@@ -17,6 +17,13 @@ export const getNode = async (nodeId: string): Promise<NodeOverview> => {
   return data;
 };
 
+export const getNodeAlert = async (nodeId: string, threshold: number = 3): Promise<import('../types').NodeAlertState> => {
+  const { data } = await api.get<import('../types').NodeAlertState>(`/api/nodes/${nodeId}/alert`, {
+    params: { threshold }
+  });
+  return data;
+};
+
 export const getLatestMetrics = async (nodeId: string): Promise<MetricRecord> => {
   const { data } = await api.get<MetricRecord>(`/api/nodes/${nodeId}/latest`);
   return data;

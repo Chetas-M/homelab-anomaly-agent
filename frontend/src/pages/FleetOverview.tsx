@@ -16,6 +16,8 @@ const NodeCard: React.FC<{ node: NodeOverview }> = ({ node }) => {
   // Derive model score and anomaly decision from either polled latest or node overview
   const score = latest?.score ?? node.latest_score;
   const isAnomalous = latest?.is_anomalous ?? node.latest_is_anomalous;
+  const isSustained = node.sustained_anomaly === true || node.alert_status === 'SUSTAINED ANOMALY';
+  const streakCount = node.streak_count ?? (isAnomalous ? 1 : 0);
   const telemetryTs = latest?.ts || node.last_seen;
 
   return (
@@ -48,27 +50,36 @@ const NodeCard: React.FC<{ node: NodeOverview }> = ({ node }) => {
           </div>
         </div>
 
-        {/* Model Classification & Freshness Banner */}
+        {/* Model Classification & Sustained Alert Banner */}
         <div className="flex justify-between items-center mb-3 p-2" style={{
-          backgroundColor: isAnomalous === true 
-            ? 'rgba(239, 68, 68, 0.12)' 
-            : isAnomalous === false 
-              ? 'rgba(34, 197, 94, 0.08)' 
-              : 'rgba(245, 158, 11, 0.08)',
-          border: `1px solid ${
-            isAnomalous === true 
-              ? 'rgba(239, 68, 68, 0.3)' 
+          backgroundColor: isSustained 
+            ? 'rgba(239, 68, 68, 0.2)' 
+            : isAnomalous === true 
+              ? 'rgba(245, 158, 11, 0.12)' 
               : isAnomalous === false 
-                ? 'rgba(34, 197, 94, 0.2)' 
-                : 'rgba(245, 158, 11, 0.2)'
+                ? 'rgba(34, 197, 94, 0.08)' 
+                : 'rgba(100, 116, 139, 0.08)',
+          border: `1px solid ${
+            isSustained 
+              ? 'rgba(239, 68, 68, 0.6)' 
+              : isAnomalous === true 
+                ? 'rgba(245, 158, 11, 0.4)' 
+                : isAnomalous === false 
+                  ? 'rgba(34, 197, 94, 0.2)' 
+                  : 'rgba(100, 116, 139, 0.2)'
           }`,
           borderRadius: '4px'
         }}>
           <div className="flex items-center gap-1 text-xs font-semibold">
-            {isAnomalous === true ? (
+            {isSustained ? (
               <>
                 <ShieldAlert size={14} style={{ color: 'var(--color-error)' }} />
-                <span style={{ color: 'var(--color-error)' }}>ANOMALOUS</span>
+                <span style={{ color: 'var(--color-error)', fontWeight: 700 }}>SUSTAINED ANOMALY ({streakCount}/3)</span>
+              </>
+            ) : isAnomalous === true ? (
+              <>
+                <AlertTriangle size={14} style={{ color: 'var(--color-warning)' }} />
+                <span style={{ color: 'var(--color-warning)' }}>ANOMALOUS SAMPLE ({streakCount}/3)</span>
               </>
             ) : isAnomalous === false ? (
               <>
@@ -77,8 +88,8 @@ const NodeCard: React.FC<{ node: NodeOverview }> = ({ node }) => {
               </>
             ) : (
               <>
-                <AlertTriangle size={14} style={{ color: 'var(--color-warning)' }} />
-                <span style={{ color: 'var(--color-warning)' }}>WARMUP / UNSCORED</span>
+                <AlertTriangle size={14} style={{ color: 'var(--text-muted)' }} />
+                <span style={{ color: 'var(--text-muted)' }}>WARMUP / UNSCORED</span>
               </>
             )}
           </div>
@@ -257,6 +268,7 @@ export default function FleetOverview() {
   const onlineNodes = nodes.filter(n => n.online).length;
   const offlineNodes = nodes.length - onlineNodes;
   const anomalousNodes = nodes.filter(n => n.latest_is_anomalous === true);
+  const sustainedAlertNodes = nodes.filter(n => n.sustained_anomaly === true || n.alert_status === 'SUSTAINED ANOMALY');
   const latestSimSample = simMetrics.length > 0 ? simMetrics[simMetrics.length - 1] : null;
 
   return (
@@ -310,11 +322,13 @@ export default function FleetOverview() {
           <div className="text-xs text-muted mt-2">Historical telemetry retained</div>
         </div>
         <div className="card">
-          <div className="metric-label">Active Anomalies</div>
-          <div className="mono" style={{ fontSize: '2.5rem', lineHeight: 1, color: anomalousNodes.length > 0 ? 'var(--color-error)' : 'var(--color-success)' }}>
-            {anomalousNodes.length}
+          <div className="metric-label">Sustained Alerts</div>
+          <div className="mono" style={{ fontSize: '2.5rem', lineHeight: 1, color: sustainedAlertNodes.length > 0 ? 'var(--color-error)' : 'var(--color-success)' }}>
+            {sustainedAlertNodes.length}
           </div>
-          <div className="text-xs text-muted mt-2">Isolation Forest output</div>
+          <div className="text-xs text-muted mt-2">
+            {anomalousNodes.length} anomalous sample{anomalousNodes.length === 1 ? '' : 's'} (threshold: 3)
+          </div>
         </div>
       </div>
 
@@ -472,31 +486,55 @@ export default function FleetOverview() {
           <thead>
             <tr>
               <th className="text-left text-muted font-normal pb-2" style={{width: '180px'}}>Latest Sample Time</th>
-              <th className="text-left text-muted font-normal pb-2" style={{width: '140px'}}>Node</th>
-              <th className="text-left text-muted font-normal pb-2" style={{width: '160px'}}>Model Classification</th>
+              <th className="text-left text-muted font-normal pb-2" style={{width: '130px'}}>Node</th>
+              <th className="text-left text-muted font-normal pb-2" style={{width: '160px'}}>Sample Classification</th>
+              <th className="text-left text-muted font-normal pb-2" style={{width: '190px'}}>Sustained Alert State</th>
               <th className="text-left text-muted font-normal pb-2">Inference Status & Score</th>
             </tr>
           </thead>
           <tbody>
-            {nodes.map(node => (
-              <tr key={node.node_id}>
-                <td className="mono text-muted">{formatDateTime(node.last_seen)}</td>
-                <td className="font-semibold">{getDisplayName(node.node_id)}</td>
-                <td>
-                  {node.latest_is_anomalous === true ? (
-                    <span style={{ color: 'var(--color-error)', fontWeight: 600 }}>ANOMALY DETECTED</span>
-                  ) : node.latest_is_anomalous === false ? (
-                    <span style={{ color: 'var(--color-success)' }}>NORMAL</span>
-                  ) : (
-                    <span style={{ color: 'var(--color-warning)' }}>WARMUP / UNSCORED</span>
-                  )}
-                </td>
-                <td className="mono text-muted">
-                  Score: {node.latest_score !== null && node.latest_score !== undefined ? node.latest_score.toFixed(4) : 'Warmup/None'}
-                  {' '}({node.online ? 'Online' : 'Offline / Intermittent'})
-                </td>
-              </tr>
-            ))}
+            {nodes.map(node => {
+              const isSustained = node.sustained_anomaly === true || node.alert_status === 'SUSTAINED ANOMALY';
+              const streak = node.streak_count ?? (node.latest_is_anomalous ? 1 : 0);
+              return (
+                <tr key={node.node_id}>
+                  <td className="mono text-muted">{formatDateTime(node.last_seen)}</td>
+                  <td className="font-semibold">{getDisplayName(node.node_id)}</td>
+                  <td>
+                    {node.latest_is_anomalous === true ? (
+                      <span style={{ color: 'var(--color-error)', fontWeight: 600 }}>ANOMALOUS SAMPLE</span>
+                    ) : node.latest_is_anomalous === false ? (
+                      <span style={{ color: 'var(--color-success)' }}>NORMAL</span>
+                    ) : (
+                      <span style={{ color: 'var(--text-muted)' }}>WARMUP / UNSCORED</span>
+                    )}
+                  </td>
+                  <td>
+                    {isSustained ? (
+                      <span style={{ color: 'var(--color-error)', fontWeight: 700 }}>
+                        🚨 SUSTAINED ANOMALY ({streak}/3)
+                      </span>
+                    ) : node.latest_is_anomalous === true ? (
+                      <span style={{ color: 'var(--color-warning)', fontWeight: 500 }}>
+                        ⚠️ Accumulating ({streak}/3)
+                      </span>
+                    ) : node.online ? (
+                      <span style={{ color: 'var(--color-success)' }}>
+                        ✓ Normal (0/3)
+                      </span>
+                    ) : (
+                      <span className="text-muted">
+                        Stale / Offline
+                      </span>
+                    )}
+                  </td>
+                  <td className="mono text-muted">
+                    Score: {node.latest_score !== null && node.latest_score !== undefined ? node.latest_score.toFixed(4) : 'Warmup/None'}
+                    {' '}({node.online ? 'Online' : 'Offline / Intermittent'})
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>

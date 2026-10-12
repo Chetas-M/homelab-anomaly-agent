@@ -1,0 +1,18 @@
+{
+  "candidate_version": "1.0-beta-baseline",
+  "created_at_utc": "2026-10-12T15:03:31.835452+00:00",
+  "frozen_manifest_preserved": true,
+  "nodes": {
+    "beta": {
+      "status": "candidate_evaluated",
+      "training_samples": 32972,
+      "evaluation_samples": 10991,
+      "features": 31,
+      "frozen_anomaly_rate_pct": 1.8742607588026567,
+      "candidate_anomaly_rate_pct": 2.192703120735147,
+      "frozen_sustained_incidents": 0,
+      "candidate_sustained_incidents": 0,
+      "recommendation": "Safe for shadow canary / offline evaluation; ready for operator signoff."
+    }
+  }
+}

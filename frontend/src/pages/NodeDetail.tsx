@@ -263,6 +263,8 @@ export default function NodeDetail() {
 
   const isAnomalous = latest?.is_anomalous ?? node.latest_is_anomalous;
   const scoreVal = latest?.score ?? node.latest_score;
+  const isSustained = node.sustained_anomaly === true || node.alert_status === 'SUSTAINED ANOMALY';
+  const streakCount = node.streak_count ?? (isAnomalous ? 1 : 0);
 
   // Group attributions
   const elevatedMetrics = attributions.filter(a => a.status === 'ELEVATED');
@@ -313,26 +315,46 @@ export default function NodeDetail() {
       <h3 className="mb-4 text-muted">Model Inference & Latest Telemetry</h3>
       <div className="grid grid-cols-4 mb-8">
         <div className="card" style={{ 
-          borderColor: isAnomalous === true ? 'var(--color-error)' : isAnomalous === false ? 'var(--color-success)' : 'var(--color-warning)' 
+          borderColor: isAnomalous === true ? 'var(--color-warning)' : isAnomalous === false ? 'var(--color-success)' : 'var(--border-color)' 
         }}>
           <div className="metric-label flex items-center gap-1">
             {isAnomalous === true ? (
-              <ShieldAlert size={14} style={{ color: 'var(--color-error)' }} />
+              <AlertTriangle size={14} style={{ color: 'var(--color-warning)' }} />
             ) : isAnomalous === false ? (
               <ShieldCheck size={14} style={{ color: 'var(--color-success)' }} />
             ) : (
-              <AlertTriangle size={14} style={{ color: 'var(--color-warning)' }} />
+              <AlertTriangle size={14} style={{ color: 'var(--text-muted)' }} />
             )}
-            Model Classification
+            Sample Classification
           </div>
           <div className="mono" style={{ 
-            fontSize: '1.75rem', 
+            fontSize: '1.5rem', 
             lineHeight: 1.2, 
-            color: isAnomalous === true ? 'var(--color-error)' : isAnomalous === false ? 'var(--color-success)' : 'var(--color-warning)' 
+            color: isAnomalous === true ? 'var(--color-warning)' : isAnomalous === false ? 'var(--color-success)' : 'var(--text-muted)' 
           }}>
-            {isAnomalous === true ? 'ANOMALOUS' : isAnomalous === false ? 'NORMAL' : 'WARMUP'}
+            {isAnomalous === true ? 'ANOMALOUS SAMPLE' : isAnomalous === false ? 'NORMAL' : 'WARMUP'}
           </div>
-          <div className="text-xs text-muted mt-2">Isolation Forest decision</div>
+          <div className="text-xs text-muted mt-2">Latest single scored sample</div>
+        </div>
+
+        <div className="card" style={{ 
+          borderColor: isSustained ? 'var(--color-error)' : 'var(--border-color)',
+          backgroundColor: isSustained ? 'rgba(239, 68, 68, 0.08)' : 'inherit'
+        }}>
+          <div className="metric-label flex items-center gap-1">
+            <ShieldAlert size={14} style={{ color: isSustained ? 'var(--color-error)' : isAnomalous ? 'var(--color-warning)' : 'var(--color-success)' }} />
+            Sustained Alert State
+          </div>
+          <div className="mono" style={{ 
+            fontSize: '1.5rem', 
+            lineHeight: 1.2, 
+            color: isSustained ? 'var(--color-error)' : isAnomalous ? 'var(--color-warning)' : 'var(--color-success)' 
+          }}>
+            {isSustained ? 'SUSTAINED (3/3)' : isAnomalous ? `STREAK (${streakCount}/3)` : 'NORMAL (0/3)'}
+          </div>
+          <div className="text-xs text-muted mt-2">
+            {isSustained ? 'Active alert (≥ 3 samples)' : `Threshold: 3 consecutive anomalies`}
+          </div>
         </div>
 
         <div className="card">

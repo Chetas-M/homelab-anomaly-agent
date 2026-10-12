@@ -12,6 +12,22 @@ export interface NodeOverview {
   capabilities: NodeCapabilities;
   latest_score?: number | null;
   latest_is_anomalous?: boolean | null;
+  alert_status?: string | null;
+  sustained_anomaly?: boolean | null;
+  streak_count?: number | null;
+}
+
+export interface NodeAlertState {
+  node_id: string;
+  status: string;
+  is_sustained_anomaly: boolean;
+  streak_count: number;
+  threshold: number;
+  latest_score: number | null;
+  latest_is_anomalous: boolean | null;
+  latest_ts: string | null;
+  message: string;
+  last_evaluated_at: string;
 }
 
 export interface MetricRecord {

@@ -1,0 +1,20 @@
+{
+  "node_id": "beta",
+  "model_type": "IsolationForest",
+  "role": "candidate_offline_baseline",
+  "status": "candidate_not_promoted",
+  "hyperparameters": {
+    "n_estimators": 100,
+    "max_samples": "auto",
+    "contamination": 0.01,
+    "random_state": 42
+  },
+  "training_samples": 32972,
+  "feature_count": 31,
+  "training_start_utc": "2026-09-27T06:00:07.076750+00:00",
+  "training_end_utc": "2026-10-08T19:18:16.197361+00:00",
+  "random_seed": 42,
+  "sklearn_version": "1.8.0",
+  "python_version": "3.13.7",
+  "creation_time_utc": "2026-10-12T15:03:27.891680+00:00"
+}

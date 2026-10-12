@@ -46,6 +46,21 @@ class NodeOverview(BaseModel):
     capabilities: NodeCapabilities
     latest_score: Optional[float] = None
     latest_is_anomalous: Optional[bool] = None
+    alert_status: Optional[str] = None
+    sustained_anomaly: Optional[bool] = None
+    streak_count: Optional[int] = None
+
+class NodeAlertState(BaseModel):
+    node_id: str
+    alert_status: str
+    sustained_anomaly: bool
+    streak_count: int
+    threshold: int
+    latest_score: Optional[float] = None
+    latest_is_anomalous: Optional[bool] = None
+    latest_ts: Optional[datetime] = None
+    is_stale: bool
+    message: str
 
 class MetricRecord(BaseModel):
     id: int

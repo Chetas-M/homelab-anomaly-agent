@@ -14,6 +14,7 @@ from . import models, schemas
 from .db import engine, get_db
 from .attribution import compute_metric_attributions
 from .simulation import simulation_manager
+from .alerts import evaluate_node_alert_state
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -134,6 +135,8 @@ def get_nodes(db: Session = Depends(get_db)):
             score_row = db.execute(score_stmt).scalar_one_or_none()
             latest_score = score_row.score if score_row else None
             latest_is_anomalous = score_row.is_anomalous if score_row else None
+
+            alert_state = evaluate_node_alert_state(db, row.node_id)
             
             nodes.append(schemas.NodeOverview(
                 node_id=row.node_id,
@@ -142,7 +145,10 @@ def get_nodes(db: Session = Depends(get_db)):
                 online=is_online,
                 capabilities=capabilities,
                 latest_score=latest_score,
-                latest_is_anomalous=latest_is_anomalous
+                latest_is_anomalous=latest_is_anomalous,
+                alert_status=alert_state["alert_status"],
+                sustained_anomaly=alert_state["sustained_anomaly"],
+                streak_count=alert_state["streak_count"],
             ))
         return nodes
     except SQLAlchemyError as e:
@@ -187,6 +193,8 @@ def get_node(node_id: str, db: Session = Depends(get_db)):
         latest_score = score_row.score if score_row else None
         latest_is_anomalous = score_row.is_anomalous if score_row else None
 
+        alert_state = evaluate_node_alert_state(db, node_id)
+
         return schemas.NodeOverview(
             node_id=node_id,
             first_seen=first_seen,
@@ -194,7 +202,10 @@ def get_node(node_id: str, db: Session = Depends(get_db)):
             online=is_online,
             capabilities=capabilities,
             latest_score=latest_score,
-            latest_is_anomalous=latest_is_anomalous
+            latest_is_anomalous=latest_is_anomalous,
+            alert_status=alert_state["alert_status"],
+            sustained_anomaly=alert_state["sustained_anomaly"],
+            streak_count=alert_state["streak_count"],
         )
     except HTTPException:
         raise
@@ -434,3 +445,20 @@ def stop_simulation():
 @app.get("/api/simulation/metrics")
 def get_simulation_metrics():
     return simulation_manager.get_metrics()
+
+@app.get("/api/nodes/{node_id}/alert", response_model=schemas.NodeAlertState)
+def get_node_alert(
+    node_id: str,
+    threshold: int = Query(default=3, ge=1, le=20),
+    db: Session = Depends(get_db)
+):
+    try:
+        node_exists = db.execute(select(models.NodeMetric.id).where(models.NodeMetric.node_id == node_id).limit(1)).scalar_one_or_none()
+        if node_exists is None:
+            raise HTTPException(status_code=404, detail="Node not found")
+        return evaluate_node_alert_state(db, node_id, threshold=threshold)
+    except HTTPException:
+        raise
+    except SQLAlchemyError as e:
+        logger.error(f"Database error in get_node_alert: {e}")
+        raise HTTPException(status_code=500, detail="Database error")
